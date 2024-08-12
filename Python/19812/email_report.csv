@@ -1,0 +1,5 @@
+invoice_number,date,amount,category
+INV001,dd/mm/yyyy,100.00,invoices
+INV002,dd/mm/yyyy,200.00,invoices
+SUP001,dd/mm/yyyy,0.00,support
+URG001,dd/mm/yyyy,0.00,urgent
