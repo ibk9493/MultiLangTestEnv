@@ -11,7 +11,7 @@ from datetime import datetime
 # Configuration
 IMAP_SERVER = 'imap.gmail.com'
 EMAIL_ACCOUNT = 'ibk9493@gmail.com'
-APP_SPECIFIC_PASSWORD = 'hnwuzbnpapdphgcj'
+APP_SPECIFIC_PASSWORD = 'xxx'
 
 # Connect to the server
 mail = imaplib.IMAP4_SSL(IMAP_SERVER)
