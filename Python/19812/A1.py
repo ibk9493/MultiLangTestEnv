@@ -82,7 +82,7 @@ def send_automated_response(to_email, category):
     
     server = smtplib.SMTP('smtp.gmail.com', 587)
     server.starttls()
-    server.login('ibk9493@gmail.com', 'hnwu zbnp apdp hgcj')
+    server.login('ibk9493@gmail.com', 'xxx')
     text = msg.as_string()
     server.sendmail('ibk9493@gmail.com', to_email, text)
     server.quit()
