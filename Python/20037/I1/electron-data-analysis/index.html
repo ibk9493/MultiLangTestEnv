@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Data Analysis Tool</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Data Analysis Tool</h1>
+    <input type="file" id="csvFile" accept=".csv">
+    <button id="loadButton">Load CSV</button>
+    <div id="controls">
+        <input type="text" id="filterInput" placeholder="Filter by column name">
+        <button id="filterButton">Filter</button>
+        <button id="sortButton">Sort</button>
+        <button id="summarizeButton">Summarize</button>
+    </div>
+    <div id="results"></div>
+    <script src="renderer.js"></script>
+</body>
+</html>
