@@ -1,0 +1,7 @@
+2024-08-12T11:26:58.146Z [right meow!] info: This is an info log
+2024-08-12T11:26:58.148Z [right meow!] error: This is an error log
+2024-08-12T11:26:58.151Z [right meow!] info: GET / 200 - 5ms
+2024-08-12T11:27:00.391Z [right meow!] info: This is an info log
+2024-08-12T11:27:00.392Z [right meow!] error: This is an error log
+2024-08-12T11:27:00.393Z [right meow!] info: GET / 200 - 2ms
+2024-08-12T11:27:00.441Z [right meow!] info: GET /favicon.ico 404 - 2ms
