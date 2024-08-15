@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Responsive Homepage</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .header, .footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 1em 0;
+        }
+        .content {
+            padding: 1em;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .box {
+            background-color: #f4f4f4;
+            margin: 0.5em;
+            padding: 1em;
+            border: 1px solid #ddd;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        /* Small screens: 1 box per row */
+        @media (max-width: 767px) {
+            .box {
+                width: calc(100% - 1em);
+            }
+        }
+
+        /* Medium screens: 2 boxes per row */
+        @media (min-width: 768px) and (max-width: 1023px) {
+            .box {
+                width: calc(50% - 1em);
+            }
+        }
+
+        /* Large screens: 3 boxes per row */
+        @media (min-width: 1024px) and (max-width: 1439px) {
+            .box {
+                width: calc(33.333% - 1em);
+            }
+        }
+
+        /* Extra large screens: 6 boxes per row */
+        @media (min-width: 1440px) {
+            .box {
+                width: calc(16.666% - 1em);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">Header</div>
+    <div class="content">
+        <div class="box">Content Box 1</div>
+        <div class="box">Content Box 2</div>
+        <div class="box">Content Box 3</div>
+        <div class="box">Content Box 4</div>
+        <div class="box">Content Box 5</div>
+        <div class="box">Content Box 6</div>
+    </div>
+    <div class="footer">Footer</div>
+
+    <script>
+        function adjustLayout() {
+            const width = window.innerWidth;
+            const boxes = document.querySelectorAll('.box');
+
+            let boxesPerRow;
+            if (width < 768) {
+                boxesPerRow = 1;
+            } else if (width < 1024) {
+                boxesPerRow = 2;
+            } else if (width < 1440) {
+                boxesPerRow = 3;
+            } else {
+                boxesPerRow = 6;
+            }
+
+            boxes.forEach((box, index) => {
+                if ((index + 1) % boxesPerRow === 0 || index === boxes.length - 1) {
+                    box.style.marginRight = '0.5em';
+                } else {
+                    box.style.marginRight = '0';
+                }
+            });
+
+            console.log(`Window width: ${width}px, Boxes per row: ${boxesPerRow}`);
+        }
+
+        // Initial layout adjustment
+        document.addEventListener('DOMContentLoaded', adjustLayout);
+
+        // Adjust layout on resize
+        let resizeTimer;
+        window.addEventListener('resize', function() {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(adjustLayout, 250);
+        });
+    </script>
+</body>
+</html>

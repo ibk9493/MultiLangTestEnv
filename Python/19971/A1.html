@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    />
+    <title>Homepage</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+      .header,
+      .footer {
+        background-color: #333;
+        color: white;
+        text-align: center;
+        padding: 1em 0;
+      }
+      .content {
+        padding: 1em;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .box {
+        background-color: #f4f4f4;
+        margin: 1em;
+        padding: 1.5em;
+        border: 1px solid #ddd;
+        width: calc(100% - 2em); /* Full width minus margins */
+        box-sizing: border-box;
+      }
+
+      @media (min-width: 768px) {
+        .box {
+          width: calc(50% - 2em); /* Two boxes side by side */
+        }
+      }
+
+      @media (min-width: 1200px) {
+        .box {
+          width: calc(33.333% - 2em); /* Three boxes side by side */
+        }
+      }
+      img {
+        max-width: 100%;
+        height: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">Header</div>
+    <div class="content">
+      <div class="box">Content Box 1</div>
+      <div class="box">Content Box 2</div>
+      <div class="box">Content Box 3</div>
+        
+      <div class="box">Content Box 4</div>
+    </div>
+    <div class="footer">Footer</div>
+    <script>
+      function adjustLayout() {
+        const content = document.querySelector(".content");
+        const boxes = document.querySelectorAll(".box");
+        const width = window.innerWidth;
+
+        // Resetting flex-direction for mobile
+        if (width < 768) {
+          content.style.flexDirection = "column";
+          boxes.forEach((box) => {
+            box.style.width = "100%";
+          });
+        } else {
+          content.style.flexDirection = "row";
+          // Adjust number of boxes per row based on width
+          let boxesPerRow = width < 1200 ? 2 : 3;
+          boxes.forEach((box, index) => {
+            if ((index + 1) % boxesPerRow === 0 || index === boxes.length - 1) {
+              box.style.marginRight = "1em"; // Reset right margin for last in row
+            } else {
+              box.style.marginRight = "0";
+            }
+            box.style.width = `calc(${100 / boxesPerRow}% - 2em)`;
+          });
+        }
+      }
+
+      // Call on load and resize
+      window.addEventListener("DOMContentLoaded", adjustLayout);
+      window.addEventListener("resize", function () {
+        console.log(
+          "Window resized to",
+          window.innerWidth,
+          "x",
+          window.innerHeight
+        );
+        adjustLayout();
+      });
+
+      // Optional: Debounce the resize event for performance
+      let resizeTimer;
+      window.addEventListener("resize", function () {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function () {
+          adjustLayout();
+        }, 250);
+      });
+    </script>
+  </body>
+</html>
