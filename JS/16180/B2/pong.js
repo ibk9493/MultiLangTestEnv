@@ -4,6 +4,13 @@ const ctx = canvas.getContext("2d");
 const userScoreDisplay = document.getElementById("userScore");
 const computerScoreDisplay = document.getElementById("computerScore");
 
+const difficultySettings = {
+    'easy': {speed: 1, mistakeChance: 0.3, reactionTime: 150},
+    'medium': {speed: 2, mistakeChance: 0.1, reactionTime: 100},
+    'hard': {speed: 3, mistakeChance: 0.02, reactionTime: 50}
+};
+let difficulty = 'medium'; // Default difficulty
+
 // Create the user and computer paddles
 const user = {
     x: 0,
@@ -34,6 +41,12 @@ const ball = {
     color: "#00ff99"
 };
 
+function setDifficulty(level) {
+    difficulty = level;
+    // Optionally reset the game or update UI to reflect difficulty change
+
+}
+
 // Draw the paddle
 function drawPaddle(x, y, width, height, color) {
     ctx.fillStyle = color;
@@ -58,6 +71,25 @@ function movePaddles() {
         if (user.y < 0) user.y = 0;
         if (user.y > canvas.height - user.height) user.y = canvas.height - user.height;
     });
+      // AI movement based on difficulty
+      let settings = difficultySettings[difficulty];
+      let targetY = ball.y - (computer.height / 2); // Ideal position
+
+
+    // Introduce delay in reaction
+    setTimeout(() => {
+        if (Math.random() < settings.mistakeChance) {
+            // Make a mistake by moving in the opposite direction or not moving
+            targetY = computer.y + ((Math.random() > 0.5) ? -settings.speed : settings.speed);
+        } else {
+            // Move towards the ball with some randomness to simulate human-like behavior
+            let move = (targetY - computer.y) / Math.abs(targetY - computer.y) * settings.speed;
+            computer.y += move * (1 + Math.random() * 0.5); // Add some randomness to speed
+        }
+
+        // Keep paddle within canvas
+        computer.y = Math.max(0, Math.min(canvas.height - computer.height, computer.y));
+    }, settings.reactionTime);
 
     if (computer.y < ball.y && computer.y < canvas.height - computer.height) {
         computer.y += ball.speed;
@@ -132,6 +164,9 @@ function gameLoop() {
     draw();
     requestAnimationFrame(gameLoop);
 }
-
+function resetGame() {
+    // Reset scores, ball position, etc.
+    setDifficulty(difficulty); // Reapply difficulty settings
+}
 // Start the game loop
 gameLoop();

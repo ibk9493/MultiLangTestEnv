@@ -4,6 +4,35 @@ const ctx = canvas.getContext("2d");
 const userScoreDisplay = document.getElementById("userScore");
 const computerScoreDisplay = document.getElementById("computerScore");
 
+// Existing game variables
+let difficulty = "medium";
+let computerSpeed = 2;
+let userScore = 0;
+let computerScore = 0;
+let streak = 0;
+
+// Difficulty multipliers
+const difficultyMultipliers = {
+    easy: 1,
+    medium: 1.5,
+    hard: 2
+};
+// Difficulty settings
+const difficultySettings = {
+    easy: { speed: 1.5, reactionTime: 0.2, missChance: 0.3 },
+    medium: { speed: 2.5, reactionTime: 0.1, missChance: 0.15 },
+    hard: { speed: 4, reactionTime: 0.05, missChance: 0.05 }
+};
+
+// Streak multipliers
+const streakMultipliers = [
+    1, // 0 consecutive scores
+    1.2, // 1 consecutive score (we'll use this for 2 to make it more challenging)
+    1.5, // 2 consecutive scores (3 in gameplay)
+    1.8, // 3 consecutive scores (4 in gameplay)
+    2.0  // 4 or more consecutive scores
+];
+
 // Create the user and computer paddles
 const user = {
     x: 0,
@@ -33,6 +62,18 @@ const ball = {
     dy: 2,
     color: "#00ff99"
 };
+function setDifficulty(level) {
+    difficulty = level;
+    const settings = difficultySettings[difficulty];
+    computerSpeed = settings.speed;
+    // Reset scores when difficulty changes for a fair start
+    userScore = 0;
+    computerScore = 0;
+    streak = 0;
+    userScoreDisplay.textContent = userScore;
+    computerScoreDisplay.textContent = computerScore;
+    document.getElementById('streakDisplay').textContent = `Streak: x1`;
+}
 
 // Draw the paddle
 function drawPaddle(x, y, width, height, color) {
@@ -48,6 +89,27 @@ function drawBall(x, y, radius, color) {
     ctx.fill();
     ctx.closePath();
 }
+// Function to update streak and score
+function updateScore(isUserScore) {
+    if (isUserScore) {
+        streak++;
+        let baseScore = 1; // Base score for scoring a point
+        let difficultyMultiplier = difficultyMultipliers[difficulty];
+        let currentStreakMultiplier = streakMultipliers[Math.min(streak, streakMultipliers.length - 1)];
+        
+        // Calculate score with all multipliers
+        userScore += Math.floor(baseScore * difficultyMultiplier * currentStreakMultiplier);
+        userScoreDisplay.textContent = userScore;
+
+        // Update streak display
+        document.getElementById('streakDisplay').textContent = `Streak: x${currentStreakMultiplier.toFixed(1)}`;
+    } else {
+        // Reset streak if computer scores
+        streak = 0;
+        document.getElementById('streakDisplay').textContent = `Streak: x1`;
+    }
+}
+
 
 // Move the paddles
 function movePaddles() {
@@ -59,11 +121,20 @@ function movePaddles() {
         if (user.y > canvas.height - user.height) user.y = canvas.height - user.height;
     });
 
-    if (computer.y < ball.y && computer.y < canvas.height - computer.height) {
-        computer.y += ball.speed;
-    } else if (computer.y > ball.y) {
-        computer.y -= ball.speed;
+    // AI for computer paddle based on difficulty
+    const settings = difficultySettings[difficulty];
+    
+    if (Math.random() > settings.missChance) {
+        if (ball.y < computer.y + computer.height / 2) {
+            computer.y -= computerSpeed * (1 - settings.reactionTime);
+        } else if (ball.y > computer.y + computer.height / 2) {
+            computer.y += computerSpeed * (1 - settings.reactionTime);
+        }
     }
+
+    // Prevent computer paddle from going out of bounds
+    if (computer.y < 0) computer.y = 0;
+    if (computer.y > canvas.height - computer.height) computer.y = canvas.height - computer.height;
 }
 
 // Move the ball
@@ -92,6 +163,18 @@ function moveBall() {
     if (ball.x - ball.radius > canvas.width) {
         user.score++;
         userScoreDisplay.textContent = user.score;
+        resetBall();
+    }
+    
+    if (ball.x + ball.radius < 0) {
+        computerScore++;
+        computerScoreDisplay.textContent = computerScore;
+        updateScore(false); // Computer scored, reset streak
+        resetBall();
+    }
+
+    if (ball.x - ball.radius > canvas.width) {
+        updateScore(true); // User scored, update score and streak
         resetBall();
     }
 }

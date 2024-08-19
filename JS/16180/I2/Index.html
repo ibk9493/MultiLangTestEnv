@@ -7,6 +7,7 @@
     <style>
         body {
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             height: 100vh;
@@ -18,7 +19,7 @@
         canvas {
             background: #1e1e1e;
             display: block;
-            margin: 0 auto;
+            margin: 20px auto;
             border: 3px solid #00ff99;
             box-shadow: 0px 0px 15px #00ff99;
         }
@@ -39,9 +40,35 @@
             padding: 10px 20px;
             border-radius: 5px;
         }
+
+        .difficulty {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .difficulty button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background: #00ff99;
+            border: none;
+            color: #1e1e1e;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .difficulty button:hover {
+            background: #00cc80;
+        }
     </style>
 </head>
 <body>
+    <div class="difficulty">
+        <button onclick="setDifficulty('easy')">Easy</button>
+        <button onclick="setDifficulty('medium')">Medium</button>
+        <button onclick="setDifficulty('hard')">Hard</button>
+    </div>
     <div class="score">
         <span id="userScore">0</span>
         <span id="computerScore">0</span>

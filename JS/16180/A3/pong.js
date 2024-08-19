@@ -4,6 +4,23 @@ const ctx = canvas.getContext("2d");
 const userScoreDisplay = document.getElementById("userScore");
 const computerScoreDisplay = document.getElementById("computerScore");
 
+const multiplierDisplay = document.getElementById("multiplier");
+const streakDisplay = document.getElementById("streak");
+
+let difficulty = "medium"; // Default difficulty
+let computerSpeed = 2; // Default speed
+let scoreMultiplier = 1.5; // Default multiplier (medium)
+let streak = 0;
+let baseScore = 10;
+
+// Difficulty settings
+const difficultySettings = {
+    easy: { speed: 1.5, reactionTime: 0.2, missChance: 0.3, multiplier: 1 },
+    medium: { speed: 2.5, reactionTime: 0.1, missChance: 0.15, multiplier: 1.5 },
+    hard: { speed: 4, reactionTime: 0.05, missChance: 0.05, multiplier: 2 }
+};
+
+
 // Create the user and computer paddles
 const user = {
     x: 0,
@@ -33,6 +50,47 @@ const ball = {
     dy: 2,
     color: "#00ff99"
 };
+function setDifficulty(level) {
+    difficulty = level;
+    const settings = difficultySettings[difficulty];
+    computerSpeed = settings.speed;
+    scoreMultiplier = settings.multiplier;
+    updateMultiplierDisplay();
+}
+function updateMultiplierDisplay() {
+    multiplierDisplay.textContent = `${scoreMultiplier.toFixed(2)}x`;
+}
+
+function updateStreakDisplay() {
+    streakDisplay.textContent = streak;
+}
+function getStreakBonus() {
+    if (streak >= 3) return 1.5;
+    if (streak === 2) return 1.2;
+    return 1;
+}
+function getTotalMultiplier() {
+    return scoreMultiplier * getStreakBonus();
+}
+// Update score
+function updateScore(player) {
+    const totalMultiplier = getTotalMultiplier();
+    const scoreIncrease = Math.round(baseScore * totalMultiplier);
+
+    if (player === 'user') {
+        user.score += scoreIncrease;
+        streak++;
+        userScoreDisplay.textContent = user.score;
+    } else {
+        computer.score += scoreIncrease;
+        streak = 0; // Reset streak when computer scores
+        computerScoreDisplay.textContent = computer.score;
+    }
+
+    updateStreakDisplay();
+    updateMultiplierDisplay();
+}
+
 
 // Draw the paddle
 function drawPaddle(x, y, width, height, color) {
@@ -59,11 +117,20 @@ function movePaddles() {
         if (user.y > canvas.height - user.height) user.y = canvas.height - user.height;
     });
 
-    if (computer.y < ball.y && computer.y < canvas.height - computer.height) {
-        computer.y += ball.speed;
-    } else if (computer.y > ball.y) {
-        computer.y -= ball.speed;
+    // AI for computer paddle based on difficulty
+    const settings = difficultySettings[difficulty];
+    
+    if (Math.random() > settings.missChance) {
+        if (ball.y < computer.y + computer.height / 2) {
+            computer.y -= computerSpeed * (1 - settings.reactionTime);
+        } else if (ball.y > computer.y + computer.height / 2) {
+            computer.y += computerSpeed * (1 - settings.reactionTime);
+        }
     }
+
+    // Prevent computer paddle from going out of bounds
+    if (computer.y < 0) computer.y = 0;
+    if (computer.y > canvas.height - computer.height) computer.y = canvas.height - computer.height;
 }
 
 // Move the ball
@@ -84,18 +151,15 @@ function moveBall() {
     }
 
     if (ball.x + ball.radius < 0) {
-        computer.score++;
-        computerScoreDisplay.textContent = computer.score;
+        updateScore('computer');
         resetBall();
     }
 
     if (ball.x - ball.radius > canvas.width) {
-        user.score++;
-        userScoreDisplay.textContent = user.score;
+        updateScore('user');
         resetBall();
     }
 }
-
 // Reset the ball to the center
 function resetBall() {
     ball.x = canvas.width / 2;
@@ -117,15 +181,16 @@ function update() {
     movePaddles();
     moveBall();
 
-    if (user.score >= 10 || computer.score >= 10) {
-        alert(user.score >= 10 ? "You Win!" : "Computer Wins!");
+    if (user.score >= 100 || computer.score >= 100) {
+        alert(user.score >= 100 ? "You Win!" : "Computer Wins!");
         user.score = 0;
         computer.score = 0;
+        streak = 0;
         userScoreDisplay.textContent = user.score;
         computerScoreDisplay.textContent = computer.score;
+        updateStreakDisplay();
     }
 }
-
 // Game loop
 function gameLoop() {
     update();
@@ -134,4 +199,5 @@ function gameLoop() {
 }
 
 // Start the game loop
+setDifficulty('medium');
 gameLoop();

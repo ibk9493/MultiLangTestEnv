@@ -4,6 +4,15 @@ const ctx = canvas.getContext("2d");
 const userScoreDisplay = document.getElementById("userScore");
 const computerScoreDisplay = document.getElementById("computerScore");
 
+// Difficulty levels
+const DIFFICULTY = {
+    EASY: 'easy',
+    MEDIUM: 'medium',
+    HARD: 'hard'
+};
+
+let currentDifficulty = DIFFICULTY.MEDIUM;
+
 // Create the user and computer paddles
 const user = {
     x: 0,
@@ -28,11 +37,39 @@ const ball = {
     x: canvas.width / 2,
     y: canvas.height / 2,
     radius: 10,
-    speed: 2, 
-    dx: 2,
-    dy: 2,
+    speed: 5,
+    dx: 5,
+    dy: 5,
     color: "#00ff99"
 };
+
+// AI configuration
+const AI = {
+    reactionDelay: 0,
+    maxSpeed: 0,
+    accuracy: 0,
+    updateConfig: function() {
+        switch(currentDifficulty) {
+            case DIFFICULTY.EASY:
+                this.reactionDelay = 16;
+                this.maxSpeed = 3;
+                this.accuracy = 0.7;
+                break;
+            case DIFFICULTY.MEDIUM:
+                this.reactionDelay = 8;
+                this.maxSpeed = 5;
+                this.accuracy = 0.85;
+                break;
+            case DIFFICULTY.HARD:
+                this.reactionDelay = 2;
+                this.maxSpeed = 7;
+                this.accuracy = 0.95;
+                break;
+        }
+    }
+};
+
+AI.updateConfig();
 
 // Draw the paddle
 function drawPaddle(x, y, width, height, color) {
@@ -59,11 +96,22 @@ function movePaddles() {
         if (user.y > canvas.height - user.height) user.y = canvas.height - user.height;
     });
 
-    if (computer.y < ball.y && computer.y < canvas.height - computer.height) {
-        computer.y += ball.speed;
-    } else if (computer.y > ball.y) {
-        computer.y -= ball.speed;
+    // AI movement
+    if (frameCount % AI.reactionDelay === 0) {
+        const perfectY = ball.y - computer.height / 2;
+        const randomError = (1 - AI.accuracy) * computer.height * (Math.random() - 0.5);
+        const targetY = perfectY + randomError;
+        
+        if (computer.y < targetY) {
+            computer.y += Math.min(AI.maxSpeed, targetY - computer.y);
+        } else if (computer.y > targetY) {
+            computer.y -= Math.min(AI.maxSpeed, computer.y - targetY);
+        }
     }
+
+    // Ensure computer paddle stays within bounds
+    if (computer.y < 0) computer.y = 0;
+    if (computer.y > canvas.height - computer.height) computer.y = canvas.height - computer.height;
 }
 
 // Move the ball
@@ -112,8 +160,11 @@ function draw() {
     drawBall(ball.x, ball.y, ball.radius, ball.color);
 }
 
+let frameCount = 0;
+
 // Update game elements
 function update() {
+    frameCount++;
     movePaddles();
     moveBall();
 
@@ -135,3 +186,14 @@ function gameLoop() {
 
 // Start the game loop
 gameLoop();
+
+// Function to change difficulty
+function changeDifficulty(difficulty) {
+    currentDifficulty = difficulty;
+    AI.updateConfig();
+}
+
+// Add these buttons to your HTML
+// <button onclick="changeDifficulty(DIFFICULTY.EASY)">Easy</button>
+// <button onclick="changeDifficulty(DIFFICULTY.MEDIUM)">Medium</button>
+// <button onclick="changeDifficulty(DIFFICULTY.HARD)">Hard</button>

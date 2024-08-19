@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pong Game</title>
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #2b2b2b;
+        font-family: "Arial", sans-serif;
+      }
+
+      canvas {
+        background: #1e1e1e;
+        display: block;
+        margin: 20px auto;
+        border: 3px solid #00ff99;
+        box-shadow: 0px 0px 15px #00ff99;
+      }
+
+      .score {
+        position: absolute;
+        color: #00ff99;
+        font-size: 35px;
+        top: 20px;
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        padding: 0 20px;
+      }
+
+      .score span {
+        background: rgba(0, 0, 0, 0.5);
+        padding: 10px 20px;
+        border-radius: 5px;
+      }
+
+      .difficulty {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .difficulty button {
+        padding: 10px 20px;
+        font-size: 16px;
+        background: #00ff99;
+        border: none;
+        color: #1e1e1e;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+
+      .difficulty button:hover {
+        background: #00cc80;
+      }
+      .game-info {
+        color: #00ff99;
+        font-size: 18px;
+        margin-top: 10px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="difficulty">
+      <button onclick="setDifficulty('easy')">Easy</button>
+      <button onclick="setDifficulty('medium')">Medium</button>
+      <button onclick="setDifficulty('hard')">Hard</button>
+      <div class="game-info">
+        <span>Multiplier: <span id="multiplier">1x</span></span>
+        <span>Streak: <span id="streak">0</span></span>
+      </div>
+    </div>
+    <div class="score">
+      <span id="userScore">0</span>
+      <span id="computerScore">0</span>
+    </div>
+    <!-- ... (previous HTML content) ... -->
+    <div
+      id="leaderboard"
+      style="
+        display: none;
+        background: #1e1e1e;
+        padding: 20px;
+        border: 3px solid #00ff99;
+        box-shadow: 0px 0px 15px #00ff99;
+        color: #00ff99;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      "
+    >
+      <h2>Leaderboard</h2>
+      <div id="leaderboard-content"></div>
+      <button
+        onclick="document.getElementById('leaderboard').style.display='none'"
+      >
+        Close
+      </button>
+    </div>
+    <!-- Add a button to show leaderboard -->
+    <button onclick="showLeaderboard()">View Leaderboard</button>
+    <canvas id="pong" width="800" height="400"></canvas>
+
+    
+
+    <script src="pong.js"></script>
+  </body>
+</html>

@@ -4,6 +4,17 @@ const ctx = canvas.getContext("2d");
 const userScoreDisplay = document.getElementById("userScore");
 const computerScoreDisplay = document.getElementById("computerScore");
 
+let difficulty = "medium"; // Default difficulty
+let computerSpeed = 2; // Default speed
+
+// Difficulty settings
+const difficultySettings = {
+    easy: { speed: 1.5, reactionTime: 0.2, missChance: 0.3 },
+    medium: { speed: 2.5, reactionTime: 0.1, missChance: 0.15 },
+    hard: { speed: 4, reactionTime: 0.05, missChance: 0.05 }
+};
+
+
 // Create the user and computer paddles
 const user = {
     x: 0,
@@ -33,6 +44,12 @@ const ball = {
     dy: 2,
     color: "#00ff99"
 };
+// Set the difficulty
+function setDifficulty(level) {
+    difficulty = level;
+    const settings = difficultySettings[difficulty];
+    computerSpeed = settings.speed;
+}
 
 // Draw the paddle
 function drawPaddle(x, y, width, height, color) {
@@ -59,11 +76,20 @@ function movePaddles() {
         if (user.y > canvas.height - user.height) user.y = canvas.height - user.height;
     });
 
-    if (computer.y < ball.y && computer.y < canvas.height - computer.height) {
-        computer.y += ball.speed;
-    } else if (computer.y > ball.y) {
-        computer.y -= ball.speed;
+    // AI for computer paddle based on difficulty
+    const settings = difficultySettings[difficulty];
+    
+    if (Math.random() > settings.missChance) {
+        if (ball.y < computer.y + computer.height / 2) {
+            computer.y -= computerSpeed * (1 - settings.reactionTime);
+        } else if (ball.y > computer.y + computer.height / 2) {
+            computer.y += computerSpeed * (1 - settings.reactionTime);
+        }
     }
+
+    // Prevent computer paddle from going out of bounds
+    if (computer.y < 0) computer.y = 0;
+    if (computer.y > canvas.height - computer.height) computer.y = canvas.height - computer.height;
 }
 
 // Move the ball
