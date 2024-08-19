@@ -164,9 +164,14 @@ function gameLoop() {
     draw();
     requestAnimationFrame(gameLoop);
 }
+
 function resetGame() {
-    // Reset scores, ball position, etc.
-    setDifficulty(difficulty); // Reapply difficulty settings
+    user.score = 0;
+    computer.score = 0;
+    streak = 0;
+    updateStreakDisplay();
+    userScoreDisplay.textContent = user.score;
+    computerScoreDisplay.textContent = computer.score;
 }
 // Start the game loop
 gameLoop();
