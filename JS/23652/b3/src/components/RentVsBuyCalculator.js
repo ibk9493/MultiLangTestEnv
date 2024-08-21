@@ -21,25 +21,24 @@ const RentVsBuyCalculator = () => {
   const monthlyMortgageRate = mortgageRate / 100 / 12;
   const numPayments = years * 12;
   const monthlyPayment = loanAmount * monthlyMortgageRate / (1 - (1 + monthlyMortgageRate) ** -numPayments);
-  const [inflationRate, setInflationRate] = useState(2); // Assume 2% inflation rate
+const [inflationRate, setInflationRate] = useState(2); // Assume 2% inflation rate
 
-  // Function to adjust for inflation
-  const adjustForInflation = (value, years) => {
-    return value * Math.pow((1 + (inflationRate / 100)), years);
-  };
-  
-  // Adjust monthly payments, rent, maintenance, etc., over time:
-  for (let year = 1; year <= years; year++) {
-    const inflatedMonthlyPayment = adjustForInflation(monthlyPayment, year);
-    const inflatedAnnualTax = adjustForInflation(currentHomePrice * (taxRate / 100), year);
-    const inflatedAnnualMaintenance = adjustForInflation(currentHomePrice * (maintenanceRate / 100), year);
-    const inflatedRent = adjustForInflation(rent, year);
-  
-    // Sum these inflated values for total costs
-    totalBuyCost += (inflatedMonthlyPayment * 12) + inflatedAnnualTax + inflatedAnnualMaintenance;
-    totalRentCost += inflatedRent * 12;
-  }
-  
+// Function to adjust for inflation
+const adjustForInflation = (value, years) => {
+  return value * Math.pow((1 + (inflationRate / 100)), years);
+};
+
+// Adjust monthly payments, rent, maintenance, etc., over time:
+for (let year = 1; year <= years; year++) {
+  const inflatedMonthlyPayment = adjustForInflation(monthlyPayment, year);
+  const inflatedAnnualTax = adjustForInflation(currentHomePrice * (taxRate / 100), year);
+  const inflatedAnnualMaintenance = adjustForInflation(currentHomePrice * (maintenanceRate / 100), year);
+  const inflatedRent = adjustForInflation(rent, year);
+
+  // Sum these inflated values for total costs
+  totalBuyCost += (inflatedMonthlyPayment * 12) + inflatedAnnualTax + inflatedAnnualMaintenance;
+  totalRentCost += inflatedRent * 12;
+}
 
   // Calculate the total cost of buying with appreciation
   const calculateBuyCost = () => {
