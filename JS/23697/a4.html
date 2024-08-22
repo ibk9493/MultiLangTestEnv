@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compact Mortgage Calculator</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="p-3">
+    <h1 class="mb-4">Mortgage Calculator</h1>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Loan Details</h5>
+                    <input id="loanAmount" type="number" class="form-control mb-2" placeholder="Loan Amount">
+                    <input id="interestRate" type="number" class="form-control mb-2" placeholder="Interest Rate (%)">
+                    <input id="loanTerm" type="number" class="form-control mb-2" placeholder="Loan Term (years)">
+                    <button class="btn btn-primary" onclick="calculateMortgage()">Calculate</button>
+                    <button class="btn btn-secondary" onclick="saveScenario()">Save Scenario</button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Results</h5>
+                    <p>Monthly Payment: $<span id="monthlyPayment"></span></p>
+                    <canvas id="paymentChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Saved Scenarios</h5>
+                    <select id="savedScenarios" class="form-control mb-2" onchange="loadScenario()"></select>
+                    <button class="btn btn-danger btn-sm" onclick="deleteScenario()">Delete</button>
+                    <button class="btn btn-info btn-sm" onclick="optimizeScenarios()">Optimize</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="optimizationResults"></div>
+    <div class="row" id="charts"></div>
+
+    <script>
+        function calculateMortgage() {
+            const P = parseFloat(document.getElementById('loanAmount').value);
+            const r = parseFloat(document.getElementById('interestRate').value) / 100 / 12;
+            const n = parseFloat(document.getElementById('loanTerm').value) * 12;
+            const payment = (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+            document.getElementById('monthlyPayment').textContent = payment.toFixed(2);
+            updateChart(P, r, n, payment);
+        }
+
+        function updateChart(loanAmount, interestRate, loanTerm, monthlyPayment) {
+            const labels = [];
+            const principalData = [];
+            const interestData = [];
+
+            let remainingBalance = loanAmount;
+
+            for (let month = 1; month <= loanTerm; month++) {
+                labels.push(month);
+                const interestPayment = remainingBalance * interestRate;
+                const principalPayment = monthlyPayment - interestPayment;
+                remainingBalance -= principalPayment;
+
+                principalData.push(principalPayment);
+                interestData.push(interestPayment);
+            }
+
+            if (paymentChart) {
+                paymentChart.destroy();
+            }
+
+            paymentChart = new Chart(document.getElementById('paymentChart'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Principal Payment',
+                            data: principalData,
+                            borderColor: 'rgb(75, 192, 192)',
+                            fill: false
+                        },
+                        {
+                            label: 'Interest Payment',
+                            data: interestData,
+                            borderColor: 'rgb(255, 99, 132)',
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Amortization Schedule'
+                        },
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    label += ': $' + context.raw.toFixed(2);
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Month'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Payment Amount ($)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function saveScenario() {
+            const name = prompt("Enter scenario name:");
+            if (name) {
+                const scenario = { loanAmount: document.getElementById('loanAmount').value, interestRate: document.getElementById('interestRate').value, loanTerm: document.getElementById('loanTerm').value };
+                localStorage.setItem(name, JSON.stringify(scenario));
+                updateScenarioList();
+            }
+        }
+
+        function updateScenarioList() {
+            const select = document.getElementById('savedScenarios');
+            select.innerHTML = ''; // Clear current options
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = key;
+                select.appendChild(option);
+            }
+        }
+
+        function loadScenario() {
+            const scenario = JSON.parse(localStorage.getItem(document.getElementById('savedScenarios').value));
+            if (scenario) {
+                document.getElementById('loanAmount').value = scenario.loanAmount;
+                document.getElementById('interestRate').value = scenario.interestRate;
+                document.getElementById('loanTerm').value = scenario.loanTerm;
+                calculateMortgage();
+            }
+        }
+
+        function deleteScenario() {
+            const key = document.getElementById('savedScenarios').value;
+            if (key && confirm(`Delete ${key}?`)) {
+                localStorage.removeItem(key);
+                updateScenarioList();
+            }
+        }
+
+        function optimizeScenarios() {
+            const scenarios = JSON.parse(localStorage.getItem('mortgageScenarios')) || {};
+            if (Object.keys(scenarios).length === 0) {
+                alert("No saved scenarios to analyze. Please save some scenarios first.");
+                return;
+            }
+
+            let lowestTotalCost = Infinity;
+            let lowestMonthlyPayment = Infinity;
+            let optimalScenario = null;
+            let optimalMonthlyScenario = null;
+
+            const results = [];
+
+            for (const [name, scenario] of Object.entries(scenarios)) {
+                const loanAmount = parseFloat(scenario.loanAmount);
+                const interestRate = parseFloat(scenario.interestRate) / 100 / 12;
+                const loanTerm = parseInt(scenario.loanTerm) * 12;
+
+                const monthlyPayment = (loanAmount * interestRate * Math.pow(1 + interestRate, loanTerm)) / (Math.pow(1 + interestRate, loanTerm) - 1);
+                const totalCost = monthlyPayment * loanTerm;
+
+                results.push({
+                    name,
+                    loanAmount,
+                    interestRate: parseFloat(scenario.interestRate),
+                    loanTerm: parseInt(scenario.loanTerm),
+                    monthlyPayment,
+                    totalCost
+                });
+
+                if (totalCost < lowestTotalCost) {
+                    lowestTotalCost = totalCost;
+                    optimalScenario = name;
+                }
+
+                if (monthlyPayment < lowestMonthlyPayment) {
+                    lowestMonthlyPayment = monthlyPayment;
+                    optimalMonthlyScenario = name;
+                }
+            }
+
+            displayOptimizationResults(results, optimalScenario, optimalMonthlyScenario);
+            createTotalCostChart(results);
+            createMonthlyPaymentChart(results);
+        }
+
+        // Initial setup
+        updateScenarioList();
+        calculateMortgage();
+    </script>
+</body>
+</html>

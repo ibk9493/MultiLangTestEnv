@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mortgage Calculator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .calculator {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .input-section,
+        .result-section {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .input-group {
+            margin-bottom: 10px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input {
+            width: 100%;
+            padding: 5px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .comparison {
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Mortgage Calculator</h1>
+    <div class="calculator">
+        <div class="input-section">
+            <h2>Loan Details</h2>
+            <div class="input-group">
+                <label for="loanAmount">Loan Amount ($):</label>
+                <input type="number" id="loanAmount" value="200000">
+            </div>
+            <div class="input-group">
+                <label for="interestRate">Interest Rate (%):</label>
+                <input type="number" id="interestRate" value="3.5" step="0.1">
+            </div>
+            <div class="input-group">
+                <label for="loanTerm">Loan Term (years):</label>
+                <input type="number" id="loanTerm" value="30">
+            </div>
+            <div class="input-group">
+                <label for="extraPayment">Extra Monthly Payment ($):</label>
+                <input type="number" id="extraPayment" value="0">
+            </div>
+            <button onclick="calculateMortgage()">Calculate</button>
+            <button onclick="addComparison()">Add to Comparison</button>
+            <button onclick="saveScenario()">Save Scenario</button>
+            <button onclick="loadScenario()">Load Scenario</button>
+        </div>
+    </div>
+    <div class="result-section">
+        <h2>Results</h2>
+        <p>Monthly Payment: $<span id="monthlyPayment"></span></p>
+        <p>Total Interest: $<span id="totalInterest"></span></p>
+        <canvas id="paymentChart"></canvas>
+    </div>
+    <div>
+        <h3>Early Payoff Benefits</h3>
+        <p>Months Saved: <span id="monthsSaved"></span></p>
+        <p>Total Interest Saved: $<span id="interestSaved"></span></p>
+    </div>
+    </div>
+    <div class="comparison">
+        <h2>Loan Comparison</h2>
+        <table id="comparisonTable">
+            <tr>
+                <th>Loan Amount</th>
+                <th>Interest Rate</th>
+                <th>Loan Term</th>
+                <th>Monthly Payment</th>
+                <th>Total Interest</th>
+            </tr>
+        </table>
+    </div>
+    <script>
+        let paymentChart;
+
+        function calculateMortgage() {
+            const loanAmount = parseFloat(document.getElementById('loanAmount').value);
+            const interestRate = parseFloat(document.getElementById('interestRate').value) / 100 / 12;
+            const loanTerm = parseInt(document.getElementById('loanTerm').value) * 12;
+
+            const monthlyPayment = (loanAmount * interestRate * Math.pow(1 + interestRate, loanTerm)) / (Math.pow(1 + interestRate, loanTerm) - 1);
+            const totalInterest = monthlyPayment * loanTerm - loanAmount;
+
+            document.getElementById('monthlyPayment').textContent = monthlyPayment.toFixed(2);
+            document.getElementById('totalInterest').textContent = totalInterest.toFixed(2);
+
+            updateChart(loanAmount, interestRate, loanTerm, monthlyPayment);
+        }
+
+        function updateChart(loanAmount, interestRate, loanTerm, monthlyPayment) {
+            const labels = [];
+            const principalData = [];
+            const interestData = [];
+
+            let remainingBalance = loanAmount;
+
+            for (let month = 1; month <= loanTerm; month++) {
+                labels.push(month);
+                const interestPayment = remainingBalance * interestRate;
+                const principalPayment = monthlyPayment - interestPayment;
+                remainingBalance -= principalPayment;
+
+                principalData.push(principalPayment);
+                interestData.push(interestPayment);
+            }
+
+            if (paymentChart) {
+                paymentChart.destroy();
+            }
+
+            paymentChart = new Chart(document.getElementById('paymentChart'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Principal Payment',
+                            data: principalData,
+                            borderColor: 'rgb(75, 192, 192)',
+                            fill: false
+                        },
+                        {
+                            label: 'Interest Payment',
+                            data: interestData,
+                            borderColor: 'rgb(255, 99, 132)',
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Amortization Schedule'
+                        },
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    let label = context.dataset.label || '';
+                                    label += ': $' + context.raw.toFixed(2);
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Month'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Payment Amount ($)'
+                            }
+                        }
+                    }
+                }
+            });
+            // Early payoff calculation
+        const extraPayment = parseFloat(document.getElementById('extraPayment').value);
+        let principal = loanAmount;
+        let months = 0;
+        let totalInterestPaid = 0;
+
+        while (principal > 0) {
+            let interest = principal * (interestRate);
+            let principalPayment = monthlyPayment - interest + extraPayment;
+            if (principalPayment > principal) principalPayment = principal;
+            principal -= principalPayment;
+            totalInterestPaid += interest;
+            months++;
+
+            if (months > loanTerm) break; // Prevent infinite loop
+        }
+
+        const originalMonths = loanTerm / 12;
+        const newMonths = months / 12;
+        const monthsSaved = originalMonths - newMonths;
+
+        document.getElementById('monthsSaved').textContent = monthsSaved.toFixed(2);
+        document.getElementById('interestSaved').textContent = (totalInterest - totalInterestPaid).toFixed(2);
+
+
+        }
+        function saveScenario() {
+        const scenario = {
+            loanAmount: document.getElementById('loanAmount').value,
+            interestRate: document.getElementById('interestRate').value,
+            loanTerm: document.getElementById('loanTerm').value,
+            extraPayment: document.getElementById('extraPayment').value
+        };
+        const scenarios = JSON.parse(localStorage.getItem('loanScenarios') || '[]');
+        scenarios.push(scenario);
+        localStorage.setItem('loanScenarios', JSON.stringify(scenarios));
+    }
+
+        function loadScenario() {
+            let scenarios = JSON.parse(localStorage.getItem('loanScenarios') || '[]');
+            if (scenarios.length > 0) {
+                let lastScenario = scenarios[scenarios.length - 1];
+                document.getElementById('loanAmount').value = lastScenario.loanAmount;
+                document.getElementById('interestRate').value = lastScenario.interestRate;
+                document.getElementById('loanTerm').value = lastScenario.loanTerm;
+                document.getElementById('extraPayment').value = lastScenario.extraPayment || 0;
+                calculateMortgage(); // Recalculate with loaded data
+            } else {
+                alert('No saved scenarios to load.');
+            }
+        }
+        function addComparison() {
+            calculateMortgage();  // Ensure calculations are up-to-date before adding to comparison
+
+            const loanAmount = parseFloat(document.getElementById('loanAmount').value);
+            const interestRate = parseFloat(document.getElementById('interestRate').value);
+            const loanTerm = parseInt(document.getElementById('loanTerm').value);
+            const monthlyPayment = parseFloat(document.getElementById('monthlyPayment').textContent);
+            const totalInterest = parseFloat(document.getElementById('totalInterest').textContent);
+
+            const table = document.getElementById('comparisonTable');
+            const row = table.insertRow(-1);
+
+            row.insertCell(0).textContent = loanAmount.toFixed(2);
+            row.insertCell(1).textContent = interestRate.toFixed(2) + '%';
+            row.insertCell(2).textContent = loanTerm;
+            row.insertCell(3).textContent = monthlyPayment.toFixed(2);
+            row.insertCell(4).textContent = totalInterest.toFixed(2);
+        }
+        if (localStorage.getItem('loanScenarios')) {
+        loadScenario();
+    }
+        // Initialize the calculator
+        calculateMortgage();
+    </script>
+</body>
+
+</html>
