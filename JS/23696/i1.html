@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Book Tracker</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; background: #f4f4f9; }
+        .widget {
+            width: 80%;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .book-form, .book-list, .reading-goals {
+            margin: 20px 0;
+        }
+        input, button, textarea {
+            margin: 10px 0;
+            padding: 10px;
+            width: calc(100% - 22px);
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        ul { list-style: none; padding: 0; }
+        li { margin-bottom: 10px; padding: 10px; background: #eee; }
+        #bookChart { width: 100%; height: 300px; }
+    </style>
+</head>
+<body>
+
+<div class="widget">
+    <h2>My Book Tracker</h2>
+    <!-- Book Entry Form -->
+    <div class="book-form">
+        <input id="bookTitle" placeholder="Book Title" />
+        <input id="bookRating" type="number" min="1" max="5" placeholder="Rating (1-5)" />
+        <textarea id="bookReview" placeholder="Your Review"></textarea>
+        <button onclick="addBook()">Add Book</button>
+    </div>
+
+    <!-- Book List Display -->
+    <div class="book-list">
+        <h3>Books Read</h3>
+        <ul id="booksList"></ul>
+    </div>
+
+    <!-- Reading Goals -->
+    <div class="reading-goals">
+        <input id="goalBooks" type="number" placeholder="Books to read this year" />
+        <button onclick="setGoal()">Set Goal</button>
+        <canvas id="bookChart"></canvas>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let books = JSON.parse(localStorage.getItem('books') || '[]');
+    let goal = localStorage.getItem('readingGoal') || 0;
+    let chartInstance;
+
+    const ctx = document.getElementById('bookChart').getContext('2d');
+
+    function renderBooks() {
+        const list = document.getElementById('booksList');
+        list.innerHTML = books.map((book, index) => `
+            <li>
+                ${book.title} - Rating: ${book.rating}/5
+                <button onclick="removeBook(${index})">Remove</button>
+            </li>
+        `).join('');
+    }
+
+    function addBook() {
+        const title = document.getElementById('bookTitle').value;
+        const rating = document.getElementById('bookRating').value;
+        const review = document.getElementById('bookReview').value;
+        if(title) {
+            books.push({title, rating, review});
+            localStorage.setItem('books', JSON.stringify(books));
+            renderBooks();
+            updateChart();
+        }
+    }
+
+    function removeBook(index) {
+        books.splice(index, 1);
+        localStorage.setItem('books', JSON.stringify(books));
+        renderBooks();
+        updateChart();
+    }
+
+    function setGoal() {
+        goal = document.getElementById('goalBooks').value;
+        localStorage.setItem('readingGoal', goal);
+        updateChart();
+    }
+
+    function updateChart() {
+        if (chartInstance) {
+            chartInstance.destroy(); // Destroy the existing chart before creating a new one
+        }
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Books Read', 'Goal'],
+                datasets: [{
+                    label: 'Reading Progress',
+                    data: [books.length, goal],
+                    backgroundColor: ['rgba(75, 192, 192, 0.2)', 'rgba(255, 99, 132, 0.2)'],
+                    borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
+                    borderWidth: 1
+                }]
+            },
+            options: { scales: { y: { beginAtZero: true } } }
+        });
+    }
+
+    // Initial render
+    renderBooks();
+    updateChart();
+</script>
+
+</body>
+</html>

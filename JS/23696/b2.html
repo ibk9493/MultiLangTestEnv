@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Enhanced Book Tracker</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; background: #f4f4f9; }
+        .widget {
+            width: 80%;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .book-form, .book-list, .reading-goals, .shelf-management {
+            margin: 20px 0;
+        }
+        input, button, textarea, select {
+            margin: 10px 0;
+            padding: 10px;
+            width: calc(100% - 22px);
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        ul { list-style: none; padding: 0; }
+        li { margin-bottom: 10px; padding: 10px; background: #eee; }
+        #bookChart { width: 100%; height: 300px; }
+        .shelf-filter { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="widget">
+    <h2>Enhanced Book Tracker</h2>
+    <!-- Book Entry Form -->
+    <div class="book-form">
+        <input id="bookTitle" placeholder="Book Title" />
+        <input id="bookRating" type="number" min="1" max="5" placeholder="Rating (1-5)" />
+        <textarea id="bookReview" placeholder="Your Review"></textarea>
+        <select id="bookShelf">
+            <option value="Currently Reading">Currently Reading</option>
+            <option value="To-Read">To-Read</option>
+            <option value="Read">Read</option>
+            <option value="Favorites">Favorites</option>
+        </select>
+        <button onclick="addBook()">Add Book</button>
+    </div>
+
+    <!-- Shelf Management -->
+    <div class="shelf-management">
+        <input id="newShelf" placeholder="New Shelf Name" />
+        <button onclick="addShelf()">Add New Shelf</button>
+    </div>
+
+    <!-- Book List Display -->
+    <div class="book-list">
+        <h3>My Books</h3>
+        <div class="shelf-filter">
+            <select id="shelfFilter" onchange="filterBooks()">
+                <option value="All">All Shelves</option>
+                <option value="Currently Reading">Currently Reading</option>
+                <option value="To-Read">To-Read</option>
+                <option value="Read">Read</option>
+                <option value="Favorites">Favorites</option>
+            </select>
+        </div>
+        <ul id="booksList"></ul>
+    </div>
+
+    <!-- Reading Goals -->
+    <div class="reading-goals">
+        <input id="goalBooks" type="number" placeholder="Books to read this year" />
+        <button onclick="setGoal()">Set Goal</button>
+        <canvas id="bookChart"></canvas>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let books = JSON.parse(localStorage.getItem('books') || '[]');
+    let shelves = JSON.parse(localStorage.getItem('shelves') || '["Currently Reading", "To-Read", "Read", "Favorites"]');
+    let goal = localStorage.getItem('readingGoal') || 0;
+    let chartInstance;
+
+    const ctx = document.getElementById('bookChart').getContext('2d');
+
+    function renderBooks(filteredBooks = books) {
+        const list = document.getElementById('booksList');
+        list.innerHTML = filteredBooks.map((book, index) => `
+            <li>
+                ${book.title} - Rating: ${book.rating}/5 - Shelf: ${book.shelf}
+                <button onclick="removeBook(${index})">Remove</button>
+            </li>
+        `).join('');
+    }
+
+    function addBook() {
+        const title = document.getElementById('bookTitle').value;
+        const rating = document.getElementById('bookRating').value;
+        const review = document.getElementById('bookReview').value;
+        const shelf = document.getElementById('bookShelf').value;
+        if(title) {
+            books.push({title, rating, review, shelf});
+            localStorage.setItem('books', JSON.stringify(books));
+            renderBooks();
+            updateChart();
+        }
+    }
+
+    function removeBook(index) {
+        books.splice(index, 1);
+        localStorage.setItem('books', JSON.stringify(books));
+        renderBooks();
+        updateChart();
+    }
+
+    function setGoal() {
+        goal = document.getElementById('goalBooks').value;
+        localStorage.setItem('readingGoal', goal);
+        updateChart();
+    }
+
+    function updateChart() {
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Books Read', 'Goal'],
+                datasets: [{
+                    label: 'Reading Progress',
+                    data: [books.filter(book => book.shelf === 'Read').length, goal],
+                    backgroundColor: ['rgba(75, 192, 192, 0.2)', 'rgba(255, 99, 132, 0.2)'],
+                    borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
+                    borderWidth: 1
+                }]
+            },
+            options: { scales: { y: { beginAtZero: true } } }
+        });
+    }
+
+    function filterBooks() {
+        const shelf = document.getElementById('shelfFilter').value;
+        const filteredBooks = shelf === 'All' ? books : books.filter(book => book.shelf === shelf);
+        renderBooks(filteredBooks);
+    }
+
+    function addShelf() {
+        const newShelf = document.getElementById('newShelf').value;
+        if (newShelf && !shelves.includes(newShelf)) {
+            shelves.push(newShelf);
+            localStorage.setItem('shelves', JSON.stringify(shelves));
+            updateShelfOptions();
+        }
+    }
+
+    function updateShelfOptions() {
+        const bookShelf = document.getElementById('bookShelf');
+        const shelfFilter = document.getElementById('shelfFilter');
+        const shelfOptions = shelves.map(shelf => `<option value="${shelf}">${shelf}</option>`).join('');
+        
+        bookShelf.innerHTML = shelfOptions;
+        shelfFilter.innerHTML = `<option value="All">All Shelves</option>${shelfOptions}`;
+    }
+
+    // Initial render
+    updateShelfOptions();
+    renderBooks();
+    updateChart();
+</script>
+
+</body>
+</html>
