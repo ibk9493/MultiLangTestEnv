@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pet Feeding Schedule Widget</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+    <link rel="stylesheet" href="https://unpkg.com/@material-ui/core@latest/umd/material-ui.development.js" />
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        #app {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .pet-card {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+        .feeding-time {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .feeding-time span {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <h1>Pet Feeding Schedule</h1>
+        <div id="pet-list"></div>
+        <button id="add-pet-btn" class="mdc-button mdc-button--raised">
+            <span class="mdc-button__label">Add Pet</span>
+        </button>
+    </div>
+
+    <script src="https://unpkg.com/@material-ui/core@latest/umd/material-ui.development.js"></script>
+    <script>
+        const { Button, TextField, Select, MenuItem, FormControl, InputLabel } = MaterialUI;
+
+        let pets = [];
+
+        function createPetCard(pet) {
+            const card = document.createElement('div');
+            card.className = 'pet-card';
+            card.innerHTML = `
+                <h2>${pet.name}</h2>
+                <p>Type: ${pet.type}</p>
+                <h3>Feeding Schedule:</h3>
+                <div id="feeding-times-${pet.id}"></div>
+                <button class="add-feeding-time mdc-button mdc-button--outlined" data-pet-id="${pet.id}">
+                    <span class="mdc-button__label">Add Feeding Time</span>
+                </button>
+                <h3>Medications:</h3>
+                <div id="medications-${pet.id}"></div>
+                <button class="add-medication mdc-button mdc-button--outlined" data-pet-id="${pet.id}">
+                    <span class="mdc-button__label">Add Medication</span>
+                </button>
+            `;
+            return card;
+        }
+
+        function renderFeedingTimes(pet) {
+            const container = document.getElementById(`feeding-times-${pet.id}`);
+            container.innerHTML = '';
+            pet.feedingTimes.forEach((time, index) => {
+                const timeElement = document.createElement('div');
+                timeElement.className = 'feeding-time';
+                timeElement.innerHTML = `
+                    <span>${time}</span>
+                    <button class="remove-feeding-time mdc-button mdc-button--outlined" data-pet-id="${pet.id}" data-index="${index}">
+                        <span class="mdc-button__label">Remove</span>
+                    </button>
+                `;
+                container.appendChild(timeElement);
+            });
+        }
+
+        function renderMedications(pet) {
+            const container = document.getElementById(`medications-${pet.id}`);
+            container.innerHTML = '';
+            pet.medications.forEach((med, index) => {
+                const medElement = document.createElement('div');
+                medElement.className = 'medication';
+                medElement.innerHTML = `
+                    <p>${med.name} - ${med.time}</p>
+                    <button class="remove-medication mdc-button mdc-button--outlined" data-pet-id="${pet.id}" data-index="${index}">
+                        <span class="mdc-button__label">Remove</span>
+                    </button>
+                `;
+                container.appendChild(medElement);
+            });
+        }
+
+        function renderPets() {
+            const petList = document.getElementById('pet-list');
+            petList.innerHTML = '';
+            pets.forEach(pet => {
+                const card = createPetCard(pet);
+                petList.appendChild(card);
+                renderFeedingTimes(pet);
+                renderMedications(pet);
+            });
+        }
+
+        function addPet() {
+            const name = prompt('Enter pet name:');
+            const type = prompt('Enter pet type:');
+            if (name && type) {
+                const newPet = {
+                    id: Date.now(),
+                    name,
+                    type,
+                    feedingTimes: [],
+                    medications: []
+                };
+                pets.push(newPet);
+                renderPets();
+            }
+        }
+
+        function addFeedingTime(petId) {
+            const time = prompt('Enter feeding time (HH:MM):');
+            if (time) {
+                const pet = pets.find(p => p.id === petId);
+                pet.feedingTimes.push(time);
+                renderFeedingTimes(pet);
+            }
+        }
+
+        function removeFeedingTime(petId, index) {
+            const pet = pets.find(p => p.id === petId);
+            pet.feedingTimes.splice(index, 1);
+            renderFeedingTimes(pet);
+        }
+
+        function addMedication(petId) {
+            const name = prompt('Enter medication name:');
+            const time = prompt('Enter medication time (HH:MM):');
+            if (name && time) {
+                const pet = pets.find(p => p.id === petId);
+                pet.medications.push({ name, time });
+                renderMedications(pet);
+            }
+        }
+
+        function removeMedication(petId, index) {
+            const pet = pets.find(p => p.id === petId);
+            pet.medications.splice(index, 1);
+            renderMedications(pet);
+        }
+
+        function setupEventListeners() {
+            document.getElementById('add-pet-btn').addEventListener('click', addPet);
+            document.getElementById('pet-list').addEventListener('click', (e) => {
+                if (e.target.classList.contains('add-feeding-time')) {
+                    addFeedingTime(parseInt(e.target.dataset.petId));
+                } else if (e.target.classList.contains('remove-feeding-time')) {
+                    removeFeedingTime(parseInt(e.target.dataset.petId), parseInt(e.target.dataset.index));
+                } else if (e.target.classList.contains('add-medication')) {
+                    addMedication(parseInt(e.target.dataset.petId));
+                } else if (e.target.classList.contains('remove-medication')) {
+                    removeMedication(parseInt(e.target.dataset.petId), parseInt(e.target.dataset.index));
+                }
+            });
+        }
+
+        function checkReminders() {
+            const now = new Date();
+            const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+            pets.forEach(pet => {
+                pet.feedingTimes.forEach(time => {
+                    if (time === currentTime) {
+                        alert(`Time to feed ${pet.name}!`);
+                    }
+                });
+
+                pet.medications.forEach(med => {
+                    if (med.time === currentTime) {
+                        alert(`Time for ${pet.name}'s medication: ${med.name}`);
+                    }
+                });
+            });
+        }
+
+        function simulateSmartFeeder() {
+            console.log('Smart feeder integration would go here.');
+            // In a real implementation, this function would communicate with the smart feeder API
+        }
+
+        // Initialize the app
+        setupEventListeners();
+        setInterval(checkReminders, 60000); // Check for reminders every minute
+        setInterval(simulateSmartFeeder, 300000); // Simulate smart feeder check every 5 minutes
+
+    </script>
+</body>
+</html>
