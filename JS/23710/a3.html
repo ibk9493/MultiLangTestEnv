@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced CEO Activity Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.2/main.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.2/main.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.3.0/build/global/luxon.min.js"></script> <!-- Required Luxon for date handling -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        #calendar, .sidebar, .stats {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        #calendar {
+            flex: 2;
+            min-width: 300px;
+        }
+        .sidebar {
+            flex: 1;
+            min-width: 250px;
+        }
+        .stats {
+            flex: 1;
+            min-width: 250px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        input, button, select {
+            margin: 5px 0;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .chart-container {
+            width: 100%;
+            height: 200px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="calendar"></div>
+    <div class="sidebar">
+        <h2>Manage Activities</h2>
+        <form id="activityForm">
+            <input type="text" id="title" placeholder="Activity Title" required>
+            <input type="text" id="activityType" placeholder="Activity Type (or select existing)" list="typesList">
+            <datalist id="typesList">
+                <option value="Meeting">
+                <option value="Call">
+                <option value="Personal Task">
+            </datalist>
+            <input type="text" id="location" placeholder="Location" required>
+            <input type="datetime-local" id="start" required>
+            <input type="datetime-local" id="end" required>
+            <button type="submit">Add Activity</button>
+        </form>
+        <button id="cancelActivity" style="background-color: #dc3545;">Cancel Activity</button>
+        <button id="rescheduleActivity" style="background-color: #ffc107;">Reschedule Activity</button>
+        <div id="upcomingAppointments"></div> <!-- This element is used for showing upcoming activities, same as in Iteration 1 -->
+    </div>
+    <div class="stats">
+        <h2>Activity Stats</h2>
+        <div class="chart-container">
+            <canvas id="activityTypeChart"></canvas>
+        </div>
+        <div id="mostFrequentActivity"></div> <!-- Display for the most frequent activity, similar to Iteration 1 -->
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let calendar;
+    let activities = [];
+    const activityTypes = new Set(['Meeting', 'Call', 'Personal Task']);
+
+    // Initialize FullCalendar
+    const calendarEl = document.getElementById('calendar');
+    calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        events: activities,
+        eventClick: function(info) {
+            if (confirm('Do you want to manage this event?')) {
+                document.getElementById('cancelActivity').onclick = function() { 
+                    if (confirm('Are you sure you want to cancel this activity?')) {
+                        info.event.remove();
+                        const index = activities.findIndex(a => a.id === info.event.id);
+                        if (index !== -1) activities.splice(index, 1);
+                        updateUI();
+                    }
+                };
+                document.getElementById('rescheduleActivity').onclick = function() {
+                    const newStart = prompt('Enter new start time (YYYY-MM-DDTHH:MM):', info.event.start.toISOString().slice(0, -8));
+                    const newEnd = prompt('Enter new end time (YYYY-MM-DDTHH:MM):', info.event.end.toISOString().slice(0, -8));
+                    if (newStart && newEnd) {
+                        info.event.setStart(newStart);
+                        info.event.setEnd(newEnd);
+                        const activity = activities.find(a => a.id === info.event.id);
+                        activity.start = newStart;
+                        activity.end = newEnd;
+                        updateUI();
+                    }
+                };
+            }
+        }
+    });
+    calendar.render();
+
+    // Handle adding new activity
+    document.getElementById('activityForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const title = document.getElementById('title').value;
+        const type = document.getElementById('activityType').value;
+        const location = document.getElementById('location').value;
+        const start = document.getElementById('start').value;
+        const end = document.getElementById('end').value;
+
+        if (isAvailable(start, end)) {
+            addActivity({title, type, location, start, end});
+            updateUI();
+            this.reset();
+        } else {
+            alert('Time slot not available.');
+        }
+    });
+
+    function addActivity({title, type, location, start, end}) {
+        const newActivity = {
+            title: title,
+            type: type,
+            location: location,
+            start: start,
+            end: end,
+            id: 'act_' + Date.now() // Simple ID generation
+        };
+        activities.push(newActivity);
+        calendar.addEvent(newActivity);
+        activityTypes.add(type); // Add new type to the set
+        updateDatalist();
+
+        simulateReminder(newActivity);  // Taken from Iteration 1 to ensure reminders are set
+    }
+
+    // Function to check time slot availability, taken from Iteration 1
+    function isAvailable(start, end) {
+        const newStart = luxon.DateTime.fromISO(start);
+        const newEnd = luxon.DateTime.fromISO(end);
+        return !activities.some(act => {
+            const existingStart = luxon.DateTime.fromISO(act.start);
+            const existingEnd = luxon.DateTime.fromISO(act.end);
+            return newStart < existingEnd && newEnd > existingStart;
+        });
+    }
+
+    function updateDatalist() {
+        const datalist = document.getElementById('typesList');
+        datalist.innerHTML = ''; // Clear existing options
+        activityTypes.forEach(type => {
+            const option = document.createElement('option');
+            option.value = type;
+            datalist.appendChild(option);
+        });
+    }
+
+    // Function to update the UI, including upcoming activities and chart updates
+    function updateUI() {
+        updateUpcomingActivities(); // Similar function existed in Iteration 1 to list upcoming activities
+        updateStats(); // Function from Iteration 1 to update charts
+    }
+
+    // Function to list upcoming activities, taken from Iteration 1
+    function updateUpcomingActivities() {
+        const upcomingEl = document.getElementById('upcomingAppointments');
+        upcomingEl.innerHTML = '<h2>Upcoming Activities</h2>';
+        const now = luxon.DateTime.now();
+        const upcoming = activities
+            .filter(act => luxon.DateTime.fromISO(act.start) > now)
+            .sort((a, b) => luxon.DateTime.fromISO(a.start).toMillis() - luxon.DateTime.fromISO(b.start).toMillis())
+            .slice(0, 5);
+
+        upcoming.forEach(act => {
+            const actEl = document.createElement('div');
+            actEl.textContent = `${act.title} (${act.type}) - ${luxon.DateTime.fromISO(act.start).toFormat('MMM d, yyyy h:mm a')} - ${luxon.DateTime.fromISO(act.end).toFormat('MMM d, yyyy h:mm a')}`;
+            upcomingEl.appendChild(actEl);
+        });
+    }
+
+    // Function to simulate activity reminders, directly from Iteration 1
+    function simulateReminder(activity) {
+        const reminderTime = luxon.DateTime.fromISO(activity.start).minus({ minutes: 15 });
+        const now = luxon.DateTime.now();
+        const timeUntilReminder = reminderTime.diff(now).milliseconds;
+
+        if (timeUntilReminder > 0) {
+            setTimeout(() => {
+                alert(`Reminder: "${activity.title}" (${activity.type}) starts in 15 minutes!`);
+            }, timeUntilReminder);
+        }
+    }
+
+    // Function to update statistics, based on Iteration 1 code
+    function updateStats() {
+        // Update activity type chart
+        const typeCounts = {meeting: 0, call: 0, personal: 0};
+        activities.forEach(act => typeCounts[act.type.toLowerCase()]++);
+        
+        new Chart(document.getElementById('activityTypeChart').getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: Object.keys(typeCounts),
+                datasets: [{
+                    data: Object.values(typeCounts),
+                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
+                }]
+            }
+        });
+
+        // Update most frequent activity
+        const frequencyCount = {};
+        activities.forEach(act => {
+            frequencyCount[act.title] = (frequencyCount[act.title] || 0) + 1;
+        });
+        const sortedFrequency = Object.entries(frequencyCount).sort((a, b) => b[1] - a[1]);
+        const mostFrequentEl = document.getElementById('mostFrequentActivity');
+        if (sortedFrequency.length > 0) {
+            mostFrequentEl.textContent = `Most frequent activity: "${sortedFrequency[0][0]}" (${sortedFrequency[0][1]} times)`;
+        } else {
+            mostFrequentEl.textContent = 'No activities recorded yet.';
+        }
+    }
+
+    // Initial UI update
+    updateUI();
+});
+</script>
+
+</body>
+</html>

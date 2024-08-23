@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CEO Schedule Assistant</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        #dashboard { display: flex; }
+        #calendar, #appointmentsList { flex: 1; padding: 10px; }
+        .appointment { background: #f9f9f9; border-left: 5px solid #007bff; margin: 5px 0; padding: 10px; }
+        #addForm { margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div id="dashboard">
+    <div id="calendar"></div>
+    <div id="appointmentsList">
+        <h2>Today's Appointments</h2>
+        <div id="appList"></div>
+    </div>
+</div>
+
+<div id="addForm">
+    <h3>Add/Edit Appointment</h3>
+    <input type="text" id="title" placeholder="Title">
+    <input type="datetime-local" id="datetime">
+    <button onclick="addAppointment()">Add/Update</button>
+</div>
+
+<script>
+    let appointments = [];
+
+    function setup() {
+        let canvas = createCanvas(400, 400);
+        canvas.parent('calendar');
+        noLoop();
+    }
+
+    function draw() {
+        background(220);
+        // Simple visualization of time slots
+        for(let i = 0; i < 24; i++) {
+            let y = map(i, 0, 24, 0, height);
+            line(0, y, width, y);
+            // Check for appointments and mark them
+            appointments.forEach(app => {
+                let appStart = new Date(app.dateTime).getHours();
+                if (appStart === i) {
+                    fill(255, 0, 0, 100);
+                    rect(0, y, width, height/24);
+                }
+            });
+        }
+    }
+
+    function addAppointment() {
+        let title = document.getElementById('title').value;
+        let dateTime = document.getElementById('datetime').value;
+        if (title && dateTime) {
+            appointments.push({title, dateTime});
+            document.getElementById('title').value = '';
+            document.getElementById('datetime').value = '';
+            updateAppointmentsList();
+            redraw(); // Update p5.js canvas
+        }
+    }
+
+    function updateAppointmentsList() {
+        let list = document.getElementById('appList');
+        list.innerHTML = '';
+        appointments.forEach((app, index) => {
+            let appDiv = document.createElement('div');
+            appDiv.className = 'appointment';
+            appDiv.innerHTML = `<strong>${app.title}</strong> - ${new Date(app.dateTime).toLocaleString()}`;
+            appDiv.innerHTML += `<button onclick="deleteAppointment(${index})">Delete</button>`;
+            list.appendChild(appDiv);
+        });
+        // Check for reminders
+        checkReminders();
+    }
+
+    function deleteAppointment(index) {
+        appointments.splice(index, 1);
+        updateAppointmentsList();
+        redraw();
+    }
+
+    function checkReminders() {
+        let now = new Date();
+        appointments.forEach(app => {
+            let appTime = new Date(app.dateTime);
+            if (appTime - now <= 300000 && appTime > now) { // 5 minutes reminder
+                alert(`Reminder: ${app.title} in 5 minutes!`);
+            }
+        });
+    }
+
+    // Initial setup
+    updateAppointmentsList();
+</script>
+
+</body>
+</html>
