@@ -35,13 +35,13 @@
             background: none;
             border: none;
             font-size: 24px;
-            color: #ccc; /* Default color for non-favorited movies */
+            color: #ccc; 
             text-shadow: 0 0 3px #000;
             cursor: pointer;
             transition: color 0.3s;
         }
         .favorite-btn.active {
-            color: gold; /* Gold color for favorited movies */
+            color: gold; 
         }
         .header {
             background-color: #2a2a2a;
@@ -80,8 +80,8 @@
         const BASE_URL = 'https://api.themoviedb.org/3';
         const IMG_BASE_URL = 'https://image.tmdb.org/t/p/w500';
 
-        let movies = [];  // Used for displaying filtered results
-        let allMovies = [];  // Holds the full list of fetched movies
+        let movies = [];  
+        let allMovies = [];  
         let userRatings = JSON.parse(localStorage.getItem('userRatings')) || {};
         let watchedMovies = JSON.parse(localStorage.getItem('watchedMovies')) || {};
         let favoriteMovies = JSON.parse(localStorage.getItem('favoriteMovies')) || {};
@@ -98,8 +98,8 @@
                 : `${BASE_URL}/movie/popular?api_key=${API_KEY}`;
             const response = await fetch(url);
             const data = await response.json();
-            allMovies = data.results;  // Store the full list of movies
-            movies = allMovies;  // Initialize the displayed movies with all movies
+            allMovies = data.results;  
+            movies = allMovies;  
             displayMovies();
         }
 
@@ -155,9 +155,9 @@
 
         function toggleFavorite(movieId) {
             if (favoriteMovies[movieId]) {
-                delete favoriteMovies[movieId];  // Remove from favorites if already favorited
+                delete favoriteMovies[movieId]; 
             } else {
-                favoriteMovies[movieId] = true;  // Add to favorites if not already favorited
+                favoriteMovies[movieId] = true;  
             }
             localStorage.setItem('favoriteMovies', JSON.stringify(favoriteMovies));
             displayMovies();  // Update the UI to reflect changes
