@@ -16,6 +16,7 @@
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
             transition: transform 0.3s;
+            position: relative;
         }
         .movie-card:hover {
             transform: translateY(-5px);
@@ -34,12 +35,13 @@
             background: none;
             border: none;
             font-size: 24px;
-            color: #fff;
+            color: #ccc; /* Default color for non-favorited movies */
             text-shadow: 0 0 3px #000;
             cursor: pointer;
+            transition: color 0.3s;
         }
         .favorite-btn.active {
-            color: gold;
+            color: gold; /* Gold color for favorited movies */
         }
         .header {
             background-color: #2a2a2a;
@@ -74,11 +76,12 @@
     </div>
 
     <script>
-        const API_KEY = 'YOUR_TMDB_API_KEY';
+        const API_KEY = '519c608b04a69994e0e5b4dd88d3b6cd';
         const BASE_URL = 'https://api.themoviedb.org/3';
         const IMG_BASE_URL = 'https://image.tmdb.org/t/p/w500';
 
-        let movies = [];
+        let movies = [];  // Used for displaying filtered results
+        let allMovies = [];  // Holds the full list of fetched movies
         let userRatings = JSON.parse(localStorage.getItem('userRatings')) || {};
         let watchedMovies = JSON.parse(localStorage.getItem('watchedMovies')) || {};
         let favoriteMovies = JSON.parse(localStorage.getItem('favoriteMovies')) || {};
@@ -95,7 +98,8 @@
                 : `${BASE_URL}/movie/popular?api_key=${API_KEY}`;
             const response = await fetch(url);
             const data = await response.json();
-            movies = data.results;
+            allMovies = data.results;  // Store the full list of movies
+            movies = allMovies;  // Initialize the displayed movies with all movies
             displayMovies();
         }
 
@@ -123,7 +127,7 @@
                                 <label class="form-check-label" for="watched-${movie.id}">Watched</label>
                             </div>
                         </div>
-                        <button class="favorite-btn ${favoriteMovies[movie.id] ? 'active' : ''}" onclick="toggleFavorite(${movie.id})">⭐</button>
+                        <button class="favorite-btn ${favoriteMovies[movie.id] ? 'active' : ''}" onclick="toggleFavorite(${movie.id})">★</button>
                     </div>
                 `;
                 movieList.appendChild(movieCard);
@@ -150,9 +154,13 @@
         }
 
         function toggleFavorite(movieId) {
-            favoriteMovies[movieId] = !favoriteMovies[movieId];
+            if (favoriteMovies[movieId]) {
+                delete favoriteMovies[movieId];  // Remove from favorites if already favorited
+            } else {
+                favoriteMovies[movieId] = true;  // Add to favorites if not already favorited
+            }
             localStorage.setItem('favoriteMovies', JSON.stringify(favoriteMovies));
-            displayMovies();
+            displayMovies();  // Update the UI to reflect changes
             recommendSimilarMovies(movieId);
         }
 
@@ -210,10 +218,9 @@
 
         function handleSearch(e) {
             const searchTerm = e.target.value.toLowerCase();
-            const filteredMovies = movies.filter(movie => 
+            movies = allMovies.filter(movie => 
                 movie.title.toLowerCase().includes(searchTerm)
             );
-            movies = filteredMovies;
             displayMovies();
         }
 
