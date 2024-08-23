@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Comprehensive Pet Care Widget</title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.3.1/jspdf.umd.min.js"></script>
   <style>
     body {
       font-family: 'Roboto', sans-serif;
@@ -42,6 +45,7 @@
     }
   </style>
 </head>
+
 <body>
   <div id="app">
     <h1>Comprehensive Pet Care</h1>
@@ -49,6 +53,8 @@
     <button id="add-pet-btn" class="btn btn-primary">
       Add Pet
     </button>
+
+
   </div>
 
   <script>
@@ -83,6 +89,8 @@
           <button class="add-health-metric btn btn-outline-primary" data-pet-id="${pet.id}">
             Add Health Metric
           </button>
+                                <h3>Health Metrics</h3>
+                    <canvas id="weightChart-${pet.id}" style="width:100%;max-width:600px"></canvas>
         </div>
 
         <div class="section">
@@ -108,6 +116,8 @@
             Add Vet Visit
           </button>
         </div>
+            <button onclick="exportDataToCSV(pets[0])">Export CSV</button>
+    <button onclick="exportDataToPDF(pets[0])">Export PDF</button>
       `;
       return card;
     }
@@ -119,12 +129,17 @@
         const metricElement = document.createElement('div');
         metricElement.innerHTML = `
           <p>Weight: ${metric.weight} kg (Recorded on: ${metric.date})</p>
+              <div class="section">
+
+          </div>
           <button class="remove-health-metric btn btn-outline-danger btn-sm" data-pet-id="${pet.id}" data-index="${index}">
             Remove
           </button>
+
         `;
         container.appendChild(metricElement);
       });
+      updateWeightChart(pet);
     }
 
     function renderExerciseRoutines(pet) {
@@ -323,6 +338,7 @@
       const pet = pets.find(p => p.id === petId);
       pet.healthMetrics.splice(index, 1);
       renderHealthMetrics(pet);
+      updateWeightChart(pet)
       savePets(); // Save pets after removing a health metric
     }
 
@@ -347,6 +363,47 @@
       savePets(); // Save pets after removing a vet visit
     }
 
+    function updateWeightChart(pet) {
+      const ctx = document.getElementById(`weightChart-${pet.id}`).getContext('2d');
+      const dates = pet.healthMetrics.map(metric => metric.date);
+      const weights = pet.healthMetrics.map(metric => metric.weight);
+
+      if (window.myChart && window.myChart.destroy) {
+        window.myChart.destroy();
+      }
+
+      window.myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: dates,
+          datasets: [{
+            label: 'Weight (kg)',
+            data: weights,
+            borderColor: 'rgba(75, 192, 192, 1)',
+            fill: false
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: {
+              display: true,
+              title: {
+                display: true,
+                text: 'Date'
+              }
+            },
+            y: {
+              display: true,
+              title: {
+                display: true,
+                text: 'Weight (kg)'
+              }
+            }
+          }
+        }
+      });
+    }
     function checkReminders() {
       const now = new Date();
       const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
@@ -416,6 +473,37 @@
       }
     }
 
+    function exportDataToCSV(pet) {
+      let csvContent = "data:text/csv;charset=utf-8,"
+        + "Date,Weight,Exercise,Duration,Grooming,Medication\n";
+
+      // Here you would need to format your pet data into rows
+      // This is a simplified version:
+      pet.healthMetrics.forEach(metric => {
+        csvContent += `${metric.date},${metric.weight},,,,\n`;
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `${pet.name}_health_data.csv`);
+      document.body.appendChild(link); // Required for FF
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // For PDF, you might want to use jsPDF:
+    function exportDataToPDF(pet) {
+      const doc = new jsPDF();
+      doc.text(`Health Data for ${pet.name}`, 10, 10);
+      let y = 30;
+      pet.healthMetrics.forEach(metric => {
+        doc.text(`Date: ${metric.date}, Weight: ${metric.weight} kg`, 10, y);
+        y += 10;
+      });
+      doc.save(`${pet.name}_health_data.pdf`);
+    }
+
     function setupEventListeners() {
       document.getElementById('add-pet-btn').addEventListener('click', addPet);
       document.getElementById('pet-list').addEventListener('click', (e) => {
@@ -458,4 +546,5 @@
 
   </script>
 </body>
+
 </html>

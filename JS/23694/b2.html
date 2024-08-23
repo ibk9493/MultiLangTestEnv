@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive Pet Care Widget</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .card {
+            margin-bottom: 20px;
+        }
+        .list-group-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn-sm {
+            margin-left: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app" class="container">
+    <h1 class="text-center">Pet Care Management</h1>
+    <button id="addPet" class="btn btn-primary mb-3">Add Pet</button>
+    <div id="petsContainer"></div>
+</div>
+
+<script>
+    let pets = [];
+
+    function Pet(name, type) {
+        this.id = Date.now();
+        this.name = name;
+        this.type = type;
+        this.health = {weight: [], vetVisits: []};
+        this.exercise = [];
+        this.grooming = [];
+    }
+
+    function renderPet(pet) {
+        const petCard = `
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">${pet.name} (${pet.type})</h5>
+                <ul class="nav nav-tabs" id="petTab-${pet.id}" role="tablist">
+                    <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#health-${pet.id}" role="tab">Health</a></li>
+                    <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#exercise-${pet.id}" role="tab">Exercise</a></li>
+                    <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#grooming-${pet.id}" role="tab">Grooming</a></li>
+                </ul>
+                <div class="tab-content mt-2">
+                    <div class="tab-pane fade show active" id="health-${pet.id}" role="tabpanel">
+                        <button class="btn btn-sm btn-info mb-2" onclick="addWeight(${pet.id})">Add Weight</button>
+                        <button class="btn btn-sm btn-info mb-2" onclick="addVetVisit(${pet.id})">Add Vet Visit</button>
+                        <ul class="list-group" id="health-${pet.id}-list"></ul>
+                    </div>
+                    <div class="tab-pane fade" id="exercise-${pet.id}" role="tabpanel">
+                        <button class="btn btn-sm btn-success mb-2" onclick="addExercise(${pet.id})">Add Exercise</button>
+                        <ul class="list-group" id="exercise-${pet.id}-list"></ul>
+                    </div>
+                    <div class="tab-pane fade" id="grooming-${pet.id}" role="tabpanel">
+                        <button class="btn btn-sm btn-warning mb-2" onclick="addGrooming(${pet.id})">Add Grooming</button>
+                        <ul class="list-group" id="grooming-${pet.id}-list"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        document.getElementById('petsContainer').innerHTML += petCard;
+        updatePetDisplay(pet);
+    }
+
+    function updatePetDisplay(pet) {
+        ['health', 'exercise', 'grooming'].forEach(category => {
+            const list = document.getElementById(`${category}-${pet.id}-list`);
+            list.innerHTML = '';
+            pet[category].forEach((item, index) => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item';
+                li.textContent = category === 'health' ? 
+                    (item.type === 'weight' ? `Weight: ${item.value} lbs` : `Vet Visit: ${item.date}`) :
+                    `${item.date} - ${item.description || 'Grooming'}`;
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'btn btn-danger btn-sm';
+                removeBtn.textContent = 'Remove';
+                removeBtn.onclick = function() { removeEntry(pet.id, category, index); };
+                li.appendChild(removeBtn);
+                list.appendChild(li);
+            });
+        });
+    }
+
+    function addWeight(petId) {
+        const weight = prompt("Enter weight in lbs:");
+        if (weight) {
+            pets.find(p => p.id === petId).health.weight.push({type: 'weight', value: weight});
+            updatePetDisplay(pets.find(p => p.id === petId));
+        }
+    }
+
+    function addVetVisit(petId) {
+        const date = prompt("Enter vet visit date (YYYY-MM-DD):");
+        if (date) {
+            pets.find(p => p.id === petId).health.vetVisits.push({type: 'vet', date: date});
+            updatePetDisplay(pets.find(p => p.id === petId));
+        }
+    }
+
+    function addExercise(petId) {
+        const date = prompt("Enter exercise date (YYYY-MM-DD):");
+        const description = prompt("Describe the exercise:");
+        if (date && description) {
+            pets.find(p => p.id === petId).exercise.push({date: date, description: description});
+            updatePetDisplay(pets.find(p => p.id === petId));
+        }
+    }
+
+    function addGrooming(petId) {
+        const date = prompt("Enter grooming date (YYYY-MM-DD):");
+        if (date) {
+            pets.find(p => p.id === petId).grooming.push({date: date});
+            updatePetDisplay(pets.find(p => p.id === petId));
+        }
+    }
+
+    function removeEntry(petId, category, index) {
+        const pet = pets.find(p => p.id === petId);
+        pet[category].splice(index, 1);
+        updatePetDisplay(pet);
+    }
+
+    document.getElementById('addPet').onclick = function() {
+        const name = prompt("Enter pet's name:");
+        const type = prompt("Enter pet's type:");
+        if (name && type) {
+            const newPet = new Pet(name, type);
+            pets.push(newPet);
+            renderPet(newPet);
+        }
+    };
+
+    // Set up Bootstrap's tab functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        var tabElements = [].slice.call(document.querySelectorAll('[data-toggle="tab"]'));
+        tabElements.map(function (tabEl) {
+            new bootstrap.Tab(tabEl);
+        });
+    });
+</script>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+</body>
+</html>

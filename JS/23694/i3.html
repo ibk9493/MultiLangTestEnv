@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive Pet Care Widget</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        #app {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .pet-card {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+
+        .section {
+            margin-bottom: 15px;
+        }
+
+        .section h3 {
+            margin-bottom: 10px;
+        }
+
+        .btn {
+            margin-top: 15px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <h1>Comprehensive Pet Care</h1>
+        <div id="pet-list"></div>
+        <button id="add-pet-btn" class="btn btn-primary">Add Pet</button>
+        <button id="export-data-btn" class="btn btn-secondary">Export Data</button>
+    </div>
+
+    <script>
+        let pets = [];
+
+        function createPetCard(pet) {
+            const card = document.createElement('div');
+            card.className = 'pet-card';
+            card.innerHTML = `
+        <h2>${pet.name}</h2>
+        <p>Type: ${pet.type}</p>
+        
+        <div class="section">
+          <h3>Feeding Schedule:</h3>
+          <div id="feeding-times-${pet.id}"></div>
+          <button class="add-feeding-time btn btn-outline-primary" data-pet-id="${pet.id}">Add Feeding Time</button>
+        </div>
+        
+        <div class="section">
+          <h3>Medications:</h3>
+          <div id="medications-${pet.id}"></div>
+          <button class="add-medication btn btn-outline-primary" data-pet-id="${pet.id}">Add Medication</button>
+        </div>
+        
+        <div class="section">
+          <h3>Health Metrics:</h3>
+          <div id="health-metrics-${pet.id}"></div>
+          <div class="chart-container">
+            <canvas id="weight-chart-${pet.id}"></canvas>
+          </div>
+          <button class="add-health-metric btn btn-outline-primary" data-pet-id="${pet.id}">Add Health Metric</button>
+        </div>
+        
+        <div class="section">
+          <h3>Exercise Routines:</h3>
+          <div id="exercise-routines-${pet.id}"></div>
+          <div class="chart-container">
+            <canvas id="exercise-chart-${pet.id}"></canvas>
+          </div>
+          <button class="add-exercise-routine btn btn-outline-primary" data-pet-id="${pet.id}">Add Exercise Routine</button>
+        </div>
+        
+        <div class="section">
+          <h3>Grooming Schedules:</h3>
+          <div id="grooming-schedules-${pet.id}"></div>
+          <div class="chart-container">
+            <canvas id="grooming-chart-${pet.id}"></canvas>
+          </div>
+          <button class="add-grooming-schedule btn btn-outline-primary" data-pet-id="${pet.id}">Add Grooming Schedule</button>
+        </div>
+        
+        <div class="section">
+          <h3>Vet Visits:</h3>
+          <div id="vet-visits-${pet.id}"></div>
+          <button class="add-vet-visit btn btn-outline-primary" data-pet-id="${pet.id}">Add Vet Visit</button>
+        </div>
+      `;
+            return card;
+        }
+
+        function renderFeedingTimes(pet) {
+            const container = document.getElementById(`feeding-times-${pet.id}`);
+            container.innerHTML = '';
+            pet.feedingTimes.forEach((time, index) => {
+                const timeElement = document.createElement('div');
+                timeElement.innerHTML = `
+          <span>${time}</span>
+          <button class="remove-feeding-time btn btn-outline-danger btn-sm" data-pet-id="${pet.id}" data-index="${index}">Remove</button>
+        `;
+                container.appendChild(timeElement);
+            });
+        }
+
+        function renderMedications(pet) {
+            const container = document.getElementById(`medications-${pet.id}`);
+            container.innerHTML = '';
+            pet.medications.forEach((med, index) => {
+                const medElement = document.createElement('div');
+                medElement.innerHTML = `
+          <p>${med.name} - ${med.time}</p>
+          <button class="remove-medication btn btn-outline-danger btn-sm" data-pet-id="${pet.id}" data-index="${index}">Remove</button>
+        `;
+                container.appendChild(medElement);
+            });
+        }
+
+        function renderHealthMetrics(pet) {
+            const container = document.getElementById(`health-metrics-${pet.id}`);
+            container.innerHTML = '';
+            pet.healthMetrics.forEach((metric, index) => {
+                const metricElement = document.createElement('div');
+                metricElement.innerHTML = `
+          <p>Weight: ${metric.weight} kg (Recorded on: ${metric.date})</p>
+          <button class="remove-health-metric btn btn-outline-danger btn-sm" data-pet-id="${pet.id}" data-index="${index}">Remove</button>
+        `;
+                container.appendChild(metricElement);
+            });
+
+            renderWeightChart(pet); // Update the weight chart whenever health metrics are rendered
+        }
+
+        function renderExerciseRoutines(pet) {
+            const container = document.getElementById(`exercise-routines-${pet.id}`);
+            container.innerHTML = '';
+            pet.exerciseRoutines.forEach((exercise, index) => {
+                const exerciseElement = document.createElement('div');
+                exerciseElement.innerHTML = `
+          <p>${exercise.name} - Duration: ${exercise.duration} mins (Date: ${exercise.date})</p>
+          <button class="remove-exercise-routine btn btn-outline-danger btn-sm" data-pet-id="${pet.id}" data-index="${index}">Remove</button>
+        `;
+                container.appendChild(exerciseElement);
+            });
+
+            renderExerciseChart(pet); // Update the exercise chart whenever exercise routines are rendered
+        }
+
+        function renderGroomingSchedules(pet) {
+            const container = document.getElementById(`grooming-schedules-${pet.id}`);
+            container.innerHTML = '';
+            pet.groomingSchedules.forEach((schedule, index) => {
+                const scheduleElement = document.createElement('div');
+                scheduleElement.innerHTML = `
+          <p>${schedule.type} - Date: ${schedule.date}</p>
+          <button class="remove-grooming-schedule btn btn-outline-danger btn-sm" data-pet-id="${pet.id}" data-index="${index}">Remove</button>
+        `;
+                container.appendChild(scheduleElement);
+            });
+
+            renderGroomingChart(pet); // Update the grooming chart whenever grooming schedules are rendered
+        }
+
+        function renderVetVisits(pet) {
+            const container = document.getElementById(`vet-visits-${pet.id}`);
+            container.innerHTML = '';
+            pet.vetVisits.forEach((visit, index) => {
+                const visitElement = document.createElement('div');
+                visitElement.innerHTML = `
+          <p>Visit Date: ${visit.date} - Reason: ${visit.reason}</p>
+          <button class="remove-vet-visit btn btn-outline-danger btn-sm" data-pet-id="${pet.id}" data-index="${index}">Remove</button>
+        `;
+                container.appendChild(visitElement);
+            });
+        }
+
+        function renderWeightChart(pet) {
+            const ctx = document.getElementById(`weight-chart-${pet.id}`).getContext('2d');
+            const sortedMetrics = pet.healthMetrics.sort((a, b) => new Date(a.date) - new Date(b.date));
+            const labels = sortedMetrics.map(metric => metric.date);
+            const data = sortedMetrics.map(metric => metric.weight);
+
+            // Destroy previous chart instance if it exists
+            if (pet.weightChart) {
+                pet.weightChart.destroy();
+            }
+
+            pet.weightChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Weight (kg)',
+                        data: data,
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderExerciseChart(pet) {
+            const ctx = document.getElementById(`exercise-chart-${pet.id}`).getContext('2d');
+            const last30Days = [...Array(30)].map((_, i) => {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                return d.toISOString().split('T')[0];
+            }).reverse();
+
+            const exerciseData = last30Days.map(date => {
+                const exercisesOnDate = pet.exerciseRoutines.filter(e => e.date === date);
+                return exercisesOnDate.reduce((sum, e) => sum + parseInt(e.duration), 0);
+            });
+
+            // Destroy previous chart instance if it exists
+            if (pet.exerciseChart) {
+                pet.exerciseChart.destroy();
+            }
+
+            pet.exerciseChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: last30Days,
+                    datasets: [{
+                        label: 'Exercise Duration (mins)',
+                        data: exerciseData,
+                        backgroundColor: 'rgba(75, 192, 192, 0.6)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderGroomingChart(pet) {
+            const ctx = document.getElementById(`grooming-chart-${pet.id}`).getContext('2d');
+            const groomingTypes = [...new Set(pet.groomingSchedules.map(s => s.type))];
+            const data = groomingTypes.map(type => pet.groomingSchedules.filter(s => s.type === type).length);
+
+            // Destroy previous chart instance if it exists
+            if (pet.groomingChart) {
+                pet.groomingChart.destroy();
+            }
+
+            pet.groomingChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: groomingTypes,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 206, 86, 0.8)',
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(153, 102, 255, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        function renderPets() {
+            const petList = document.getElementById('pet-list');
+            petList.innerHTML = '';
+            pets.forEach(pet => {
+                const card = createPetCard(pet);
+                petList.appendChild(card);
+                renderFeedingTimes(pet);
+                renderMedications(pet);
+                renderHealthMetrics(pet);
+                renderExerciseRoutines(pet);
+                renderGroomingSchedules(pet);
+                renderVetVisits(pet);
+            });
+        }
+
+        function addPet() {
+            const name = prompt('Enter pet name:');
+            const type = prompt('Enter pet type:');
+            if (name && type) {
+                const newPet = {
+                    id: Date.now(),
+                    name,
+                    type,
+                    feedingTimes: [],
+                    medications: [],
+                    healthMetrics: [],
+                    exerciseRoutines: [],
+                    groomingSchedules: [],
+                    vetVisits: []
+                };
+                pets.push(newPet);
+                renderPets();
+                savePets();
+            }
+        }
+
+        function addFeedingTime(petId) {
+            const time = prompt('Enter feeding time (HH:MM):');
+            if (time) {
+                const pet = pets.find(p => p.id === petId);
+                pet.feedingTimes.push(time);
+                renderFeedingTimes(pet);
+                savePets();
+            }
+        }
+
+        function addMedication(petId) {
+            const name = prompt('Enter medication name:');
+            const time = prompt('Enter medication time (HH:MM):');
+            if (name && time) {
+                const pet = pets.find(p => p.id === petId);
+                pet.medications.push({ name, time });
+                renderMedications(pet);
+                savePets();
+            }
+        }
+
+        function addHealthMetric(petId) {
+            const weight = prompt('Enter weight (kg):');
+            const date = prompt('Enter date (YYYY-MM-DD):');
+            if (weight && date) {
+                const pet = pets.find(p => p.id === petId);
+                pet.healthMetrics.push({ weight, date });
+                renderHealthMetrics(pet);
+                savePets();
+            }
+        }
+
+        function addExerciseRoutine(petId) {
+            const name = prompt('Enter exercise name:');
+            const duration = prompt('Enter duration (minutes):');
+            const date = prompt('Enter date (YYYY-MM-DD):');
+            if (name && duration && date) {
+                const pet = pets.find(p => p.id === petId);
+                pet.exerciseRoutines.push({ name, duration, date });
+                renderExerciseRoutines(pet);
+                savePets();
+            }
+        }
+
+        function addGroomingSchedule(petId) {
+            const type = prompt('Enter grooming type:');
+            const date = prompt('Enter grooming date (YYYY-MM-DD):');
+            if (type && date) {
+                const pet = pets.find(p => p.id === petId);
+                pet.groomingSchedules.push({ type, date });
+                renderGroomingSchedules(pet);
+                savePets();
+            }
+        }
+
+        function addVetVisit(petId) {
+            const date = prompt('Enter vet visit date (YYYY-MM-DD):');
+            const reason = prompt('Enter reason for visit:');
+            if (date && reason) {
+                const pet = pets.find(p => p.id === petId);
+                pet.vetVisits.push({ date, reason });
+                renderVetVisits(pet);
+                savePets();
+            }
+        }
+
+        function removeFeedingTime(petId, index) {
+            const pet = pets.find(p => p.id === petId);
+            pet.feedingTimes.splice(index, 1);
+            renderFeedingTimes(pet);
+            savePets();
+        }
+
+        function removeMedication(petId, index) {
+            const pet = pets.find(p => p.id === petId);
+            pet.medications.splice(index, 1);
+            renderMedications(pet);
+            savePets();
+        }
+
+        function removeHealthMetric(petId, index) {
+            const pet = pets.find(p => p.id === petId);
+            pet.healthMetrics.splice(index, 1);
+            renderHealthMetrics(pet);
+            savePets();
+        }
+
+        function removeExerciseRoutine(petId, index) {
+            const pet = pets.find(p => p.id === petId);
+            pet.exerciseRoutines.splice(index, 1);
+            renderExerciseRoutines(pet);
+            savePets();
+        }
+
+        function removeGroomingSchedule(petId, index) {
+            const pet = pets.find(p => p.id === petId);
+            pet.groomingSchedules.splice(index, 1);
+            renderGroomingSchedules(pet);
+            savePets();
+        }
+
+        function removeVetVisit(petId, index) {
+            const pet = pets.find(p => p.id === petId);
+            pet.vetVisits.splice(index, 1);
+            renderVetVisits(pet);
+            savePets();
+        }
+
+        function checkReminders() {
+            const now = new Date();
+            const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            const today = now.toISOString().split('T')[0];
+
+            pets.forEach(pet => {
+                pet.feedingTimes.forEach(time => {
+                    if (time === currentTime) {
+                        alert(`Time to feed ${pet.name}!`);
+                    }
+                });
+
+                pet.medications.forEach(med => {
+                    if (med.time === currentTime) {
+                        alert(`Time for ${pet.name}'s medication: ${med.name}`);
+                    }
+                });
+
+                pet.groomingSchedules.forEach(schedule => {
+                    if (schedule.date === today) {
+                        alert(`Time to groom ${pet.name}!`);
+                    }
+                });
+
+                pet.vetVisits.forEach(visit => {
+                    if (visit.date === today) {
+                        alert(`Vet visit for ${pet.name} today!`);
+                    }
+                });
+            });
+        }
+
+        function exportData() {
+            const dataStr = JSON.stringify(pets, (key, value) => {
+                if (key === 'weightChart' || key === 'exerciseChart' || key === 'groomingChart') {
+                    return undefined; // Omit these properties from the serialized JSON
+                }
+                return value;
+            }, 2);
+
+            const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+            const exportFileDefaultName = 'pet_care_data.json';
+
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+        }
+
+        function savePets() {
+            const petsToSave = JSON.stringify(pets, (key, value) => {
+                if (key === 'weightChart' || key === 'exerciseChart' || key === 'groomingChart') {
+                    return undefined; // Omit these properties from the serialized JSON
+                }
+                return value;
+            });
+            localStorage.setItem('pets', petsToSave);
+        }
+
+        function loadPets() {
+            const storedPets = localStorage.getItem('pets');
+            if (storedPets) {
+                pets = JSON.parse(storedPets);
+                renderPets();
+            }
+        }
+
+        function setupEventListeners() {
+            document.getElementById('add-pet-btn').addEventListener('click', addPet);
+            document.getElementById('export-data-btn').addEventListener('click', exportData);
+            document.getElementById('pet-list').addEventListener('click', (e) => {
+                const petId = parseInt(e.target.dataset.petId);
+                if (e.target.classList.contains('add-feeding-time')) {
+                    addFeedingTime(petId);
+                } else if (e.target.classList.contains('remove-feeding-time')) {
+                    removeFeedingTime(petId, parseInt(e.target.dataset.index));
+                } else if (e.target.classList.contains('add-medication')) {
+                    addMedication(petId);
+                } else if (e.target.classList.contains('remove-medication')) {
+                    removeMedication(petId, parseInt(e.target.dataset.index));
+                } else if (e.target.classList.contains('add-health-metric')) {
+                    addHealthMetric(petId);
+                } else if (e.target.classList.contains('remove-health-metric')) {
+                    removeHealthMetric(petId, parseInt(e.target.dataset.index));
+                } else if (e.target.classList.contains('add-exercise-routine')) {
+                    addExerciseRoutine(petId);
+                } else if (e.target.classList.contains('remove-exercise-routine')) {
+                    removeExerciseRoutine(petId, parseInt(e.target.dataset.index));
+                } else if (e.target.classList.contains('add-grooming-schedule')) {
+                    addGroomingSchedule(petId);
+                } else if (e.target.classList.contains('remove-grooming-schedule')) {
+                    removeGroomingSchedule(petId, parseInt(e.target.dataset.index));
+                } else if (e.target.classList.contains('add-vet-visit')) {
+                    addVetVisit(petId);
+                } else if (e.target.classList.contains('remove-vet-visit')) {
+                    removeVetVisit(petId, parseInt(e.target.dataset.index));
+                }
+            });
+        }
+
+        // Initialize the app
+        loadPets();
+        setupEventListeners();
+        setInterval(checkReminders, 60000); // Check for reminders every minute
+
+    </script>
+</body>
+
+</html>

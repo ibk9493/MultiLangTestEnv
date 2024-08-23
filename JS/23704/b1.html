@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Recommendation Widget</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f4f4f4; }
+        .widget { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 600px; margin: auto; }
+        .movie-list { list-style: none; padding: 0; }
+        .movie-item { margin: 10px 0; padding: 10px; background: #e9e9e9; border-radius: 4px; }
+        .genre-select, .rate-button { margin: 10px 0; }
+    </style>
+</head>
+<body>
+
+<div class="widget">
+    <h2>Movie Recommendations</h2>
+    <select id="genreSelect" class="genre-select">
+        <option value="all">All Genres</option>
+        <!-- Genres will be populated dynamically -->
+    </select>
+    <button onclick="fetchMovies()">Fetch Movies</button>
+    <ul id="movieList" class="movie-list"></ul>
+</div>
+
+<script>
+    const apiKey = '519c608b04a69994e0e5b4dd88d3b6cd'; // Replace with your TMDB API key
+    const genreSelect = document.getElementById('genreSelect');
+    const movieList = document.getElementById('movieList');
+
+    // Fetch genres and populate dropdown
+    fetch('https://api.themoviedb.org/3/genre/movie/list?api_key=' + apiKey)
+        .then(response => response.json())
+        .then(data => {
+            data.genres.forEach(genre => {
+                const option = document.createElement('option');
+                option.value = genre.id;
+                option.textContent = genre.name;
+                genreSelect.appendChild(option);
+            });
+        });
+
+    function fetchMovies() {
+        const genreId = genreSelect.value;
+        let url = `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&with_genres=${genreId}`;
+        if (genreId === 'all') url = `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                movieList.innerHTML = ''; // Clear previous results
+                data.results.forEach(movie => displayMovie(movie));
+            });
+    }
+
+    function displayMovie(movie) {
+        const li = document.createElement('li');
+        li.className = 'movie-item';
+        li.innerHTML = `
+            <h3>${movie.title}</h3>
+            <p>${movie.overview.substring(0, 100)}...</p>
+            <button onclick="rateMovie('${movie.id}')">Rate</button>
+            <span id="rating-${movie.id}"></span>
+        `;
+        movieList.appendChild(li);
+    }
+
+    function rateMovie(id) {
+        const rating = prompt("Rate this movie out of 10:");
+        if (rating && !isNaN(rating) && rating <= 10) {
+            document.getElementById(`rating-${id}`).textContent = `Your Rating: ${rating}`;
+            // Here you would typically save this rating to a backend or local storage
+        }
+    }
+
+    // Note: Checking streaming availability would require another API or service integration
+</script>
+
+</body>
+</html>

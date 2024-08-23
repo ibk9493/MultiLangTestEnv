@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Recommendation Widget</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <style>
+        body {
+            background-color: #f0f0f0;
+            padding: 20px;
+        }
+        #movie-widget {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        #movie-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .movie-item {
+            cursor: pointer;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .movie-item:hover {
+            background-color: #f8f8f8;
+        }
+        #rating-chart {
+            max-width: 300px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="movie-widget">
+            <h2 class="mb-4">Movie Recommendation Widget</h2>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <select id="genre-filter" class="form-select">
+                        <option value="">All Genres</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <button id="add-movie" class="btn btn-primary float-end">Add Movie</button>
+                </div>
+            </div>
+            <div id="movie-list"></div>
+            <div id="movie-details" class="mt-4" style="display: none;">
+                <h3 id="movie-title"></h3>
+                <p id="movie-genre"></p>
+                <div class="mb-3">
+                    <label for="movie-rating" class="form-label">Rating:</label>
+                    <input type="number" id="movie-rating" class="form-control" min="1" max="5" step="0.1">
+                </div>
+                <div class="mb-3">
+                    <label for="movie-review" class="form-label">Review:</label>
+                    <textarea id="movie-review" class="form-control" rows="3"></textarea>
+                </div>
+                <button id="save-review" class="btn btn-success">Save Review</button>
+                <h4 class="mt-3">Streaming Sites:</h4>
+                <ul id="streaming-sites"></ul>
+            </div>
+            <div id="rating-chart" class="mt-4">
+                <canvas id="ratings-distribution"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Sample movie data
+        let movies = [
+            { id: 1, title: "Inception", genre: "Sci-Fi", rating: 4.8, review: "", streamingSites: ["Netflix", "Amazon Prime"] },
+            { id: 2, title: "The Shawshank Redemption", genre: "Drama", rating: 4.9, review: "", streamingSites: ["HBO Max", "Hulu"] },
+            { id: 3, title: "The Dark Knight", genre: "Action", rating: 4.7, review: "", streamingSites: ["Netflix", "HBO Max"] },
+        ];
+
+        // Initialize genre filter
+        const genres = [...new Set(movies.map(movie => movie.genre))];
+        const genreFilter = $('#genre-filter');
+        genres.forEach(genre => {
+            genreFilter.append(`<option value="${genre}">${genre}</option>`);
+        });
+        genreFilter.select2();
+
+        // Render movie list
+        function renderMovieList(filteredMovies = movies) {
+            const movieList = $('#movie-list');
+            movieList.empty();
+            filteredMovies.forEach(movie => {
+                movieList.append(`
+                    <div class="movie-item" data-id="${movie.id}">
+                        <h5>${movie.title} <small class="text-muted">${movie.genre}</small></h5>
+                        <p>Rating: ${movie.rating} <i class="fas fa-star text-warning"></i></p>
+                    </div>
+                `);
+            });
+        }
+
+        // Filter movies by genre
+        genreFilter.on('change', function() {
+            const selectedGenre = $(this).val();
+            const filteredMovies = selectedGenre ? movies.filter(movie => movie.genre === selectedGenre) : movies;
+            renderMovieList(filteredMovies);
+        });
+
+        // Show movie details
+        $('#movie-list').on('click', '.movie-item', function() {
+            const movieId = $(this).data('id');
+            const movie = movies.find(m => m.id === movieId);
+            $('#movie-title').text(movie.title);
+            $('#movie-genre').text(`Genre: ${movie.genre}`);
+            $('#movie-rating').val(movie.rating);
+            $('#movie-review').val(movie.review);
+            
+            const streamingSites = $('#streaming-sites');
+            streamingSites.empty();
+            movie.streamingSites.forEach(site => {
+                streamingSites.append(`<li>${site}</li>`);
+            });
+            
+            $('#movie-details').show();
+        });
+
+        // Save review
+        $('#save-review').on('click', function() {
+            const movieId = $('#movie-list .movie-item.active').data('id');
+            const movie = movies.find(m => m.id === movieId);
+            movie.rating = parseFloat($('#movie-rating').val());
+            movie.review = $('#movie-review').val();
+            renderMovieList();
+            updateRatingChart();
+        });
+
+        // Add new movie
+        $('#add-movie').on('click', function() {
+            const title = prompt("Enter movie title:");
+            const genre = prompt("Enter movie genre:");
+            if (title && genre) {
+                const newMovie = {
+                    id: movies.length + 1,
+                    title: title,
+                    genre: genre,
+                    rating: 0,
+                    review: "",
+                    streamingSites: []
+                };
+                movies.push(newMovie);
+                renderMovieList();
+                updateRatingChart();
+            }
+        });
+
+        // Initialize rating chart
+        let ratingChart;
+        function initRatingChart() {
+            const ctx = document.getElementById('ratings-distribution').getContext('2d');
+            ratingChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['1', '2', '3', '4', '5'],
+                    datasets: [{
+                        label: 'Number of Movies',
+                        data: [0, 0, 0, 0, 0],
+                        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            stepSize: 1
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update rating chart
+        function updateRatingChart() {
+            const ratings = movies.map(movie => Math.round(movie.rating));
+            const ratingCounts = [0, 0, 0, 0, 0];
+            ratings.forEach(rating => {
+                if (rating > 0 && rating <= 5) {
+                    ratingCounts[rating - 1]++;
+                }
+            });
+            ratingChart.data.datasets[0].data = ratingCounts;
+            ratingChart.update();
+        }
+
+        // Initialize the widget
+        renderMovieList();
+        initRatingChart();
+        updateRatingChart();
+    </script>
+</body>
+</html>
