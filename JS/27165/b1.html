@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pakistan Tax Expenditure 2024</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .chart-container {
+            width: 80%;
+            margin: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center;">Pakistan Tax Expenditure 2024</h1>
+    <div class="chart-container">
+        <canvas id="incomeTaxChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <canvas id="salesTaxChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <canvas id="customsDutyChart"></canvas>
+    </div>
+    <script>
+        const incomeTaxData = {
+            labels: ["Government Income", "Deductible Allowances", "Tax Credits", "Exemption from Total Income", "Reduction in Tax Rates", "Reduction in Tax Liability", "Exemption from Specific Provisions", "SROs Related Exemptions"],
+            datasets: [{
+                label: 'Income Tax Expenditure (Rs million)',
+                data: [57517, 5912, 24374, 293460, 25492, 4270, 62756, 3179],
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 1
+            }]
+        };
+
+        const salesTaxData = {
+            labels: ["Fifth Schedule", "Sixth Schedule (Local)", "Sixth Schedule (Imports)", "Eighth Schedule", "Ninth Schedule", "Twelfth Schedule", "POL Products (Local)", "POL Products (Imports)", "SROs (Local)", "SROs (Import)", "Various Sections"],
+            datasets: [{
+                label: 'Sales Tax Expenditure (Rs million)',
+                data: [206053, 461094, 214678, 357997, 33057, 208066, 1257513, 81225, 8753, 5126, 25159],
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        };
+
+        const customsDutyData = {
+            labels: ["Chapter - 99", "FTA & PTA", "Fifth Schedule", "General Concessions", "Exports"],
+            datasets: [{
+                label: 'Customs Duty Expenditure (Rs million)',
+                data: [34864, 44107, 190688, 146598, 127264],
+                backgroundColor: 'rgba(255, 206, 86, 0.2)',
+                borderColor: 'rgba(255, 206, 86, 1)',
+                borderWidth: 1
+            }]
+        };
+
+        const ctx1 = document.getElementById('incomeTaxChart').getContext('2d');
+        const ctx2 = document.getElementById('salesTaxChart').getContext('2d');
+        const ctx3 = document.getElementById('customsDutyChart').getContext('2d');
+
+        new Chart(ctx1, {
+            type: 'bar',
+            data: incomeTaxData,
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        new Chart(ctx2, {
+            type: 'bar',
+            data: salesTaxData,
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        new Chart(ctx3, {
+            type: 'bar',
+            data: customsDutyData,
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

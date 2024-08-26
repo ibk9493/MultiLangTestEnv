@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pakistan Tax Expenditure 2024</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        canvas {
+            max-width: 800px;
+            margin: 20px auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Pakistan Tax Expenditure - 2024</h1>
+    <div style="width:80%; margin: auto;">
+        <canvas id="taxTypeChart" width="400" height="200"></canvas>
+        <canvas id="incomeTaxChart" width="400" height="200"></canvas>
+        <canvas id="salesTaxChart" width="400" height="200"></canvas>
+        <canvas id="customsDutyChart" width="400" height="200"></canvas>
+    </div>
+
+    <script>
+    // Data from your expenditure report
+    const data = {
+        taxTypes: {
+            labels: ['Income Tax', 'Sales Tax', 'Customs Duty'],
+            data: [476960, 2858721, 543521]
+        },
+        incomeTax: {
+            labels: ['Government Income', 'Deductible Allowances', 'Tax Credits', 'Exemption from Total Income', 'Reduction in Tax Rates', 'Reduction in Tax Liability', 'Exemption from Specific Provisions', 'SROs Related Exemptions'],
+            data: [57517, 5912, 24374, 293460, 25492, 4270, 62756, 3179]
+        },
+        salesTax: {
+            labels: ['Zero Rating', 'Local Supplies', 'Imports', 'Reduced Rates', 'Mobile Phones', 'Additional Tax', 'POL Products Local', 'POL Products Import', 'SROs Local', 'SROs Import', 'Various Sections'],
+            data: [206053, 461094, 214678, 357997, 33057, 208066, 1257513, 81225, 8753, 5126, 25159]
+        },
+        customsDuty: {
+            labels: ['Chapter - 99', 'FTA & PTA', 'Fifth Schedule', 'General Concessions', 'Exports'],
+            data: [34864, 44107, 190688, 146598, 127264]
+        }
+    };
+
+    // Chart configurations
+    const config = (labels, data, title) => ({
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: title,
+                data: data,
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Rs million'
+                    }
+                }
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    text: title
+                }
+            }
+        }
+    });
+
+    // Creating charts
+    new Chart(document.getElementById('taxTypeChart'), config(data.taxTypes.labels, data.taxTypes.data, 'Tax Expenditure by Type'));
+    new Chart(document.getElementById('incomeTaxChart'), config(data.incomeTax.labels, data.incomeTax.data, 'Income Tax Breakdown'));
+    new Chart(document.getElementById('salesTaxChart'), config(data.salesTax.labels, data.salesTax.data, 'Sales Tax Breakdown'));
+    new Chart(document.getElementById('customsDutyChart'), config(data.customsDuty.labels, data.customsDuty.data, 'Customs Duty Breakdown'));
+    </script>
+</body>
+</html>
