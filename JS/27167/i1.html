@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tic Tac Toe with a Twist</title>
+    <style>
+        /* Styles for the game board container */
+        #board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-gap: 5px;
+        }
+        
+        /* Styles for each cell on the board */
+        .cell {
+            width: 100px;
+            height: 100px;
+            border: 1px solid black;
+            font-size: 60px;
+            text-align: center;
+            line-height: 100px;
+            cursor: pointer;
+        }
+        
+        /* Change background color on hover */
+        .cell:hover {
+            background-color: #f0f0f0;
+        }
+        
+        /* Styles for the message area */
+        #message {
+            margin-top: 20px;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Main game container -->
+    <div id="game">
+        <!-- Container for the game board -->
+        <div id="board"></div>
+        <!-- Container for displaying messages (e.g., who's turn it is, win/loss) -->
+        <div id="message"></div>
+    </div>
+    <script>
+    // Get references to the board and message elements
+    const board = document.getElementById('board');
+    const message = document.getElementById('message');
+    
+    // Initialize the current player and moves history
+    let currentPlayer = 'X';
+    let moves = { 'X': [], 'O': [] };
+
+    // Create the board cells and add them to the board
+    for(let i = 0; i < 9; i++) {
+        let cell = document.createElement('div');
+        cell.className = 'cell';
+        // Add a click event listener to each cell
+        cell.addEventListener('click', () => makeMove(i, cell));
+        board.appendChild(cell);
+    }
+
+    // Function to handle a move
+    function makeMove(index, cell) {
+    if (cell.textContent !== '') return; // Cell already taken
+
+    cell.textContent = currentPlayer;
+    moves[currentPlayer].push(index);
+
+    // Check if the current player has won
+    if (checkWin(currentPlayer)) {
+        alert(`Player ${currentPlayer} wins!`);
+        resetBoard(); // Reset the board after the alert is closed
+    } 
+    // Check if it's a draw
+    else if ([...board.children].every(cell => cell.textContent !== '')) {
+        alert("It's a draw!");
+        resetBoard(); // Reset the board after the alert is closed
+    } 
+    else {
+        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        message.textContent = `Player ${currentPlayer}'s turn`;
+    }
+
+    // Remove the oldest move if the player has more than 2 moves
+    if (moves[currentPlayer].length > 2) {
+        let oldestMove = moves[currentPlayer].shift();
+        board.children[oldestMove].textContent = '';
+    }
+}
+
+// Function to reset the board for a new game
+function resetBoard() {
+    // Clear all cells
+    Array.from(board.children).forEach(cell => cell.textContent = '');
+    // Reset moves history
+    moves = { 'X': [], 'O': [] };
+    // Reset the current player
+    currentPlayer = 'X';
+    // Update the message to indicate the new game start
+    message.textContent = `Player ${currentPlayer}'s turn`;
+}
+
+
+    // Function to check if the current player has won
+    function checkWin(player) {
+        const winPatterns = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // columns
+            [0, 4, 8], [2, 4, 6] // diagonals
+        ];
+
+        // Check if any win pattern is fully matched by the player's moves
+        return winPatterns.some(pattern => 
+            pattern.every(index => moves[player].includes(index))
+        );
+    }
+
+    
+
+    </script>
+</body>
+</html>
