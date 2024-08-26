@@ -1,0 +1,41 @@
+{
+    "fiscal_year": 2022,
+    "tax_expenditure_estimates": 3675800,
+    "income_tax": {
+      "government_income": 56000,
+      "deductible_allowances": 5900,
+      "tax_credits": 24000,
+      "exemption_from_total_income": 280000,
+      "reduction_in_tax_rates": 26000,
+      "reduction_in_tax_liability": 4300,
+      "exemption_from_specific_provisions": 62000,
+      "sro_related_exemptions": 3200,
+      "total_income_tax_expenditure": 462400
+    },
+    "sales_tax": {
+      "fifth_schedule_zero_rating": 200000,
+      "sixth_schedule_local_supplies": 450000,
+      "sixth_schedule_imports": 210000,
+      "eighth_schedule_reduced_rates": 350000,
+      "ninth_schedule_cellular_mobile_phones": 32000,
+      "twelfth_schedule_additional_tax": 205000,
+      "pol_products_sro_321_2022_local_supplies": 1200000,
+      "pol_products_sro_321_2022_imports": 80000,
+      "sro_local_supplies": 9000,
+      "sro_import": 5000,
+      "various_sections_zero_rating": 25000,
+      "total_sales_tax_expenditure": 2766000
+    },
+    "customs": {
+      "chapter_99": 35000,
+      "fta_pta": 45000,
+      "fifth_schedule": 180000,
+      "general_concessions": 150000,
+      "exports": 130000,
+      "total_customs_expenditure": 540000
+    },
+    "overall_tax_expenditure": 3675800,
+    "source": "Federal Board of Revenue",
+    "note": "Tax Expenditure estimates are based on FY 2022 data."
+  }
+  
