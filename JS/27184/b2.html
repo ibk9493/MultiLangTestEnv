@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mood Journal</title>
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <style>
+      body {
+        padding: 20px;
+      }
+      .emoji {
+        font-size: 24px;
+        cursor: pointer;
+      }
+      .selected {
+        background-color: #e0e0e0;
+        border-radius: 50%;
+      }
+      #tagList .badge {
+        margin: 5px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1 class="text-center">Daily Mood Journal</h1>
+      <section class="mood-selection text-center">
+        <span class="emoji" onclick="selectMood(this)">😔</span>
+        <span class="emoji" onclick="selectMood(this)">😐</span>
+        <span class="emoji" onclick="selectMood(this)">😊</span>
+      </section>
+      <section class="form-group">
+        <input
+          type="text"
+          id="tagInput"
+          class="form-control"
+          placeholder="Add tags..."
+          list="tagSuggestions"
+        />
+        <datalist id="tagSuggestions"></datalist>
+        <div id="tagList"></div>
+        <button class="btn btn-secondary" onclick="addTag()">Add Tag</button>
+      </section>
+      <section class="form-group">
+        <textarea
+          class="form-control"
+          id="reflectionTextarea"
+          placeholder="Daily reflections..."
+        ></textarea>
+      </section>
+      <section>
+        <canvas id="moodChart"></canvas>
+      </section>
+      <button class="btn btn-primary" onclick="saveData()">
+        Save Journal Entry
+      </button>
+      <button class="btn btn-danger" onclick="resetJournal()">Reset</button>
+
+      <!-- Modal for motivational quote or report -->
+      <div
+        class="modal fade"
+        id="motivationalModal"
+        tabindex="-1"
+        role="dialog"
+      >
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Mood Boost</h5>
+              <button
+                type="button"
+                class="close"
+                data-dismiss="modal"
+                aria-label="Close"
+              >
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body" id="modalBody">
+              <!-- Quote or report will be displayed here -->
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-dismiss="modal"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+      <script>
+        let selectedMood;
+        let tags = [];
+        let chart;
+
+        let moodData = JSON.parse(localStorage.getItem("moodJournal")) || {
+          labels: [],
+          datasets: [
+            {
+              label: "Mood Trend",
+              data: [],
+              backgroundColor: "rgba(255, 99, 132, 0.2)",
+              borderColor: "rgba(255,99,132,1)",
+              borderWidth: 1,
+            },
+          ],
+        };
+
+        let reflections = JSON.parse(localStorage.getItem("reflections")) || [];
+
+        function formatTimestamp(date) {
+          const options = {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          };
+          return date.toLocaleDateString("en-US", options);
+        }
+
+        function selectMood(emoji) {
+          if (selectedMood) selectedMood.classList.remove("selected");
+          emoji.classList.add("selected");
+          selectedMood = emoji;
+        }
+
+        function addTag() {
+          const tagInput = document.getElementById("tagInput");
+          if (tagInput.value) {
+            tags.push(tagInput.value);
+            const tagListElement = document.getElementById("tagList");
+            tagListElement.innerHTML += `<span class="tag">${tagInput.value}</span>`;
+            tagInput.value = "";
+          }
+        }
+
+        function saveData() {
+          if (!selectedMood) {
+            alert("Please select a mood before saving.");
+            return;
+          }
+
+          const mood = selectedMood.textContent;
+          const reflection =
+            document.getElementById("reflectionTextarea").value;
+          const timestamp = formatTimestamp(new Date());
+
+          moodData.labels.push(timestamp);
+          moodData.datasets[0].data.push(
+            mood === "😔" ? 1 : mood === "😐" ? 2 : 3
+          );
+
+          reflections.push({ timestamp, reflection });
+
+          // Destroy existing chart instance if it exists
+          if (chart) {
+            chart.destroy();
+          }
+
+          chart = new Chart(document.getElementById("moodChart"), {
+            type: "line",
+            data: moodData,
+            options: {
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  max: 3,
+                  ticks: {
+                    callback: function (value) {
+                      return value === 1 ? "😔" : value === 2 ? "😐" : "😊";
+                    },
+                  },
+                },
+              },
+            },
+          });
+
+          // Save to LocalStorage
+          localStorage.setItem("moodJournal", JSON.stringify(moodData));
+          localStorage.setItem("reflections", JSON.stringify(reflections));
+        }
+
+        function resetJournal() {
+          if (selectedMood) selectedMood.classList.remove("selected");
+          selectedMood = null;
+          document.getElementById("tagInput").value = "";
+          document.getElementById("tagList").innerHTML = "";
+          document.getElementById("reflectionTextarea").value = "";
+        }
+
+        // Motivational quotes array
+        const motivationalQuotes = [
+          "Every day may not be good, but there's something good in every day.",
+          "The only way to do great work is to love what you do.",
+          // Add more quotes as needed
+        ];
+
+        // Function to show motivational quote
+        function showMotivationalQuote() {
+          const randomQuote =
+            motivationalQuotes[
+              Math.floor(Math.random() * motivationalQuotes.length)
+            ];
+          document.getElementById("modalBody").innerText = randomQuote;
+          $("#motivationalModal").modal("show");
+        }
+
+        // Modify selectMood to show quote if mood is sad
+        function selectMood(emoji) {
+          if (selectedMood) selectedMood.classList.remove("selected");
+          emoji.classList.add("selected");
+          selectedMood = emoji;
+          if (emoji.textContent === "😔") {
+            showMotivationalQuote();
+          }
+        }
+
+        // Function to generate monthly report
+        function generateMonthlyReport() {
+          // Implement logic to summarize mood data by month
+          // For now, just show a placeholder
+          document.getElementById("modalBody").innerText =
+            "Your monthly mood report will appear here.";
+          $("#motivationalModal").modal("show");
+        }
+
+        // Add event listener for generating report
+        document
+          .getElementById("generateReport")
+          .addEventListener("click", generateMonthlyReport);
+
+        // Functionality for reusable tags would involve storing tags in local storage and populating the datalist
+        // Implement tag management functions here
+        
+        // Initialize the chart on page load
+        window.onload = function () {
+          if (moodData.labels.length > 0) {
+            chart = new Chart(document.getElementById("moodChart"), {
+              type: "line",
+              data: moodData,
+              options: {
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    max: 3,
+                    ticks: {
+                      callback: function (value) {
+                        return value === 1 ? "😔" : value === 2 ? "😐" : "😊";
+                      },
+                    },
+                  },
+                },
+              },
+            });
+          }
+        };
+      </script>
+    </div>
+  </body>
+</html>

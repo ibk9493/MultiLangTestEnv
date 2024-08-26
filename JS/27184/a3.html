@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mood Journal</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .emoji { font-size: 30px; cursor: pointer; transition: transform .2s; }
+        .emoji:hover { transform: scale(1.2); }
+        .selected { background-color: #cce5ff; border-radius: 50%; }
+        .tag { margin: 2px; cursor: pointer; }
+        .motivational-quote { margin-top: 20px; }
+        .active-tag { background-color: #007bff; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Daily Mood Journal</h1>
+        <div class="row">
+            <div class="col-md-6 offset-md-3">
+                <!-- Mood Selection -->
+                <div class="mood-selection text-center mb-3">
+                    <span class="emoji" onclick="selectMood(this)" aria-label="Sad">😔</span>
+                    <span class="emoji" onclick="selectMood(this)" aria-label="Neutral">😐</span>
+                    <span class="emoji" onclick="selectMood(this)" aria-label="Happy">😊</span>
+                </div>
+                
+                <!-- Tags -->
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" id="tagInput" placeholder="Add tags...">
+                    <div class="input-group-append">
+                        <button class="btn btn-outline-secondary" type="button" onclick="addTag()">Add Tag</button>
+                    </div>
+                </div>
+                <div id="tagList" class="mb-3"></div>
+
+                <!-- Reflection -->
+                <textarea class="form-control mb-3" id="reflectionTextarea" placeholder="Daily reflections..."></textarea>
+
+                <!-- Buttons -->
+                <button class="btn btn-primary" onclick="saveData()">Save Entry</button>
+                <button class="btn btn-secondary ml-2" onclick="resetJournal()">Reset</button>
+                <button class="btn btn-info ml-2" onclick="showMonthlyReport()">Monthly Report</button>
+
+                <!-- Motivational Quote -->
+                <div id="motivationalQuote" class="alert alert-info motivational-quote" style="display:none;"></div>
+
+                <!-- Mood Trends -->
+                <canvas id="moodChart" class="mt-4"></canvas>
+            </div>
+        </div>
+
+        <!-- Challenges & Badges -->
+        <div class="col-md-6 offset-md-3 mt-5">
+            <h2 class="text-center">Challenges & Badges</h2>
+            <div id="challenges">
+                <ul class="list-group">
+                    <li class="list-group-item" id="consecutiveMoodLog">
+                        <span>Log your mood for 7 consecutive days.</span>
+                        <span class="badge badge-secondary float-right">?</span>
+                    </li>
+                    <li class="list-group-item" id="dailyReflection">
+                        <span>Reflect on one good thing every day for a week.</span>
+                        <span class="badge badge-secondary float-right">?</span>
+                    </li>
+                </ul>
+            </div>
+            <div id="badges" class="mt-3">
+                <!-- Badges will be displayed here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        let selectedMood;
+        let tags = [];
+        let selectedTags = [];
+        let chart;
+
+        let moodData = JSON.parse(localStorage.getItem('moodJournal')) || { 
+            labels: [], 
+            datasets: [{ 
+                label: 'Mood Trend', 
+                data: [], 
+                backgroundColor: 'rgba(255, 99, 132, 0.2)', 
+                borderColor: 'rgba(255,99,132,1)', 
+                borderWidth: 1 
+            }] 
+        };
+
+        let reflections = JSON.parse(localStorage.getItem('reflections')) || [];
+
+        function formatTimestamp(date) {
+            const options = {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            return date.toLocaleDateString('en-US', options);
+        }
+
+        function toggleTag(element) {
+            const tag = element.textContent;
+            const index = selectedTags.indexOf(tag);
+            if (index > -1) {
+                selectedTags.splice(index, 1);
+                $(element).removeClass('active-tag');
+            } else {
+                selectedTags.push(tag);
+                $(element).addClass('active-tag');
+            }
+        }
+
+        function addTag() {
+            const tagInput = $('#tagInput').val().trim();
+            if (tagInput && !tags.includes(tagInput)) {
+                tags.push(tagInput);
+                addTagToList(tagInput);
+                $('#tagInput').val('').focus();
+            } else if (tags.includes(tagInput)) {
+                alert('This tag has already been added.');
+            }
+        }
+
+        function addTagToList(tag) {
+            $('#tagList').append(`<span class="badge badge-secondary tag" onclick="toggleTag(this)">${tag}</span>`);
+        }
+
+        function saveData() {
+            if (!selectedMood) {
+                alert('Please select a mood before saving.');
+                return;
+            }
+
+            const mood = selectedMood.textContent;
+            const reflection = $('#reflectionTextarea').val();
+            const timestamp = formatTimestamp(new Date());
+
+            moodData.labels.push(timestamp);
+            moodData.datasets[0].data.push(mood === '😔' ? 1 : mood === '😐' ? 2 : 3);
+
+            reflections.push({ timestamp, reflection });
+
+            if (chart) {
+                chart.destroy();
+            }
+
+            chart = new Chart(document.getElementById('moodChart'), {
+                type: 'line',
+                data: moodData,
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 3,
+                            ticks: {
+                                callback: function(value) {
+                                    return value === 1 ? '😔' : value === 2 ? '😐' : '😊';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            localStorage.setItem('moodJournal', JSON.stringify(moodData));
+            localStorage.setItem('reflections', JSON.stringify(reflections));
+
+            updateChallenges();
+            checkChallenges();
+
+            resetJournal();
+        }
+
+        function resetJournal() {
+            $('.emoji').removeClass('selected');
+            selectedMood = null;
+            $('#tagInput').val('');
+            $('#tagList .tag').removeClass('active-tag');
+            $('#reflectionTextarea').val('');
+            $('#motivationalQuote').hide();
+            selectedTags = [];
+        }
+
+        let motivationalQuotes = [
+            "Every day may not be good, but there's something good in every day.",
+            "The darkest nights produce the brightest stars.",
+            "You are stronger than you think."
+        ];
+
+        function selectMood(emoji) {
+            $('.emoji').removeClass('selected');
+            $(emoji).addClass('selected');
+            selectedMood = emoji;
+            if (emoji.textContent === '😔') {
+                showMotivationalQuote();
+            } else {
+                $('#motivationalQuote').hide();
+            }
+        }
+
+        let challenges = {
+            consecutiveMoodLog: { days: 0, maxDays: 1, badgeAwarded: false },
+            dailyReflection: { days: 0, maxDays: 7, badgeAwarded: false }
+        };
+
+        let badges = {};
+
+        function showMotivationalQuote() {
+            let quote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
+            $('#motivationalQuote').text(quote).show();
+        }
+
+        function checkChallenges() {
+            for (const challenge in challenges) {
+                const challengeElement = document.getElementById(challenge);
+                const badgeElement = challengeElement.querySelector('.badge');
+
+                if (!challenges[challenge].badgeAwarded) {
+                    if (challenges[challenge].days >= challenges[challenge].maxDays) {
+                        awardBadge(challenge);
+                        badgeElement.classList.remove('badge-secondary');
+                        badgeElement.classList.add('badge-success');
+                        badgeElement.textContent = 'Completed!';
+                    } else {
+                        badgeElement.textContent = `${challenges[challenge].days}/${challenges[challenge].maxDays}`;
+                    }
+                }
+            }
+        }
+
+        function awardBadge(challenge) {
+            const badgeName = challenge.replace('Log', 'Badge').replace('daily', 'Weekly');
+            const badgeDescription = `Awarded for completing the ${challenge} challenge.`;
+            badges[badgeName] = badgeDescription;
+            displayBadges();
+            challenges[challenge].badgeAwarded = true;
+        }
+
+        function displayBadges() {
+            const badgesDiv = document.getElementById('badges');
+            badgesDiv.innerHTML = '';
+            for (const badge in badges) {
+                badgesDiv.innerHTML += `<span class="badge badge-pill badge-primary mr-2">${badge}: ${badges[badge]}</span>`;
+            }
+        }
+
+        function updateChallenges() {
+            const today = new Date().toLocaleDateString();
+            const lastEntryDate = localStorage.getItem('lastMoodEntryDate');
+
+            if (lastEntryDate !== today) {
+                challenges.consecutiveMoodLog.days = (lastEntryDate === null || isConsecutive(lastEntryDate, today)) ? challenges.consecutiveMoodLog.days + 1 : 1;
+                challenges.dailyReflection.days++;
+                localStorage.setItem('lastMoodEntryDate', today);
+            }
+        }
+
+        function isConsecutive(lastDate, currentDate) {
+            const lastDateObj = new Date(lastDate);
+            const currentDateObj = new Date(currentDate);
+            const differenceInTime = currentDateObj.getTime() - lastDateObj.getTime();
+            const differenceInDays = differenceInTime / (1000 * 3600 * 24);
+            return differenceInDays === 1;
+        }
+
+        function showMonthlyReport() {
+            let report = generateMonthlyReport();
+            alert(report);
+        }
+
+        function generateMonthlyReport() {
+            return "Monthly Mood Report:\n\n" + 
+                   "Happy Days: X\nNeutral Days: Y\nSad Days: Z\n\n" + 
+                   "Top Tags: #tag1, #tag2, #tag3";
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            checkChallenges();
+            displayBadges();
+        });
+
+        window.onload = function() {
+            if (moodData.labels.length > 0) {
+                chart = new Chart(document.getElementById('moodChart'), {
+                    type: 'line',
+                    data: moodData,
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 3,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value === 1 ? '😔' : value === 2 ? '😐' : '😊';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        };
+    </script>
+</body>
+</html>

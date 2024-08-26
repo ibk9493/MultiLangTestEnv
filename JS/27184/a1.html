@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mood Journal</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap">
+    <style>
+        body { font-family: 'Roboto', sans-serif; }
+        .mood-journal { max-width: 600px; margin: 40px auto; text-align: center; }
+        .mood-selection, .tags, .reflection, .mood-trends { margin-bottom: 20px; }
+        .emoji { font-size: 24px; cursor: pointer; }
+        .selected { background-color: #e0e0e0; border-radius: 50%; }
+        .tags input { width: 50%; padding: 10px; }
+        #reflectionTextarea { width: 90%; height: 100px; padding: 10px; }
+        #moodChart { width: 100%; height: 300px; }
+    </style>
+</head>
+<body>
+    <div class="mood-journal">
+        <h1>Daily Mood Journal</h1>
+        <section class="mood-selection">
+            <span class="emoji" onclick="selectMood(this)">😔</span>
+            <span class="emoji" onclick="selectMood(this)">😐</span>
+            <span class="emoji" onclick="selectMood(this)">😊</span>
+        </section>
+        <section class="tags">
+            <input type="text" id="tagInput" placeholder="Add tags...">
+            <button onclick="addTag()">Add Tag</button>
+            <div id="tagList"></div>
+        </section>
+        <section class="reflection">
+            <textarea id="reflectionTextarea" placeholder="Daily reflections..."></textarea>
+        </section>
+        <section class="mood-trends">
+            <canvas id="moodChart"></canvas>
+        </section>
+        <button onclick="saveData()">Save Journal Entry</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let selectedMood;
+        let tags = [];
+        let reflections = [];
+        let moodData = { labels: [], datasets: [{ label: 'Mood Trend', data: [], backgroundColor: 'rgba(255, 99, 132, 0.2)', borderColor: 'rgba(255,99,132,1)', borderWidth: 1 }] };
+
+        function selectMood(emoji) {
+            if (selectedMood) selectedMood.classList.remove('selected');
+            emoji.classList.add('selected');
+            selectedMood = emoji;
+        }
+
+        function addTag() {
+            const tagInput = document.getElementById('tagInput');
+            if (tagInput.value) {
+                tags.push(tagInput.value);
+                const tagListElement = document.getElementById('tagList');
+                tagListElement.innerHTML += `<span>${tagInput.value}</span> `;
+                tagInput.value = '';
+            }
+        }
+
+        function saveData() {
+            const mood = selectedMood ? selectedMood.textContent : '';
+            const reflection = document.getElementById('reflectionTextarea').value;
+            const today = new Date().toLocaleDateString();
+
+            moodData.labels.push(today);
+            moodData.datasets[0].data.push(mood === '😔' ? 1 : mood === '😐' ? 2 : 3);
+            const chart = new Chart(document.getElementById('moodChart'), {
+                type: 'line',
+                data: moodData,
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 3,
+                            ticks: {
+                                callback: function(value) {
+                                    return value === 1 ? '😔' : value === 2 ? '😐' : '😊';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Save to LocalStorage or a backend service
+            localStorage.setItem('moodJournal', JSON.stringify(moodData));
+        }
+    </script>
+</body>
+</html>

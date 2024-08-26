@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Daily Mood Journal</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.5.1"></script>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        #moodJournal { margin: 20px; }
+        .emoji { font-size: 24px; cursor: pointer; }
+        #graph { width: 100%; height: 300px; }
+    </style>
+</head>
+<body>
+    <div id="moodJournal">
+        <h1>Mood Journal</h1>
+        <div id="moodSelection">
+            <span class="emoji" onclick="selectMood('😃')">😃</span>
+            <span class="emoji" onclick="selectMood('😐')">😐</span>
+            <span class="emoji" onclick="selectMood('😢')">😢</span>
+        </div>
+        <input id="tags" type="text" placeholder="Enter tags...">
+        <textarea id="reflection" placeholder="Your reflection here..."></textarea>
+        <button onclick="addEntry()">Add Entry</button>
+        <div id="graph"></div>
+    </div>
+    <script>
+        let moodEntries = [];
+        const ctx = document.getElementById('graph').getContext('2d');
+
+        function selectMood(emoji) {
+            document.getElementById('moodSelection').dataset.mood = emoji;
+        }
+
+        function addEntry() {
+            let mood = document.getElementById('moodSelection').dataset.mood;
+            let tags = document.getElementById('tags').value.split(',').map(tag => tag.trim());
+            let reflection = document.getElementById('reflection').value;
+            let date = moment().format('YYYY-MM-DD');
+            
+            moodEntries.push({date, mood, tags, reflection});
+            updateGraph();
+            // Reset fields
+            document.getElementById('tags').value = '';
+            document.getElementById('reflection').value = '';  
+        }
+
+        function updateGraph() {
+            // Simplifying mood to a numeric scale for charting
+            const moodScale = {'😃': 1, '😐': 0, '😢': -1};
+            let moodData = moodEntries.map(entry => ({
+                x: entry.date,
+                y: moodScale[entry.mood] || 0
+            }));
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Mood Trend',
+                        data: moodData,
+                        borderColor: 'blue',
+                        fill: false
+                    }]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'day'
+                            }
+                        },
+                        y: {
+                            suggestedMin: -1,
+                            suggestedMax: 1
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
