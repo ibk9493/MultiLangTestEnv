@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dynamic Tic Tac Toe</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(to right, #83a4d4, #b6fbff);
+            margin: 0;
+        }
+        #game-container {
+            text-align: center;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        #board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            gap: 5px;
+            margin: 20px 0;
+        }
+        .cell {
+            width: 100px;
+            height: 100px;
+            background: #f0f0f0;
+            border: 2px solid #555;
+            font-size: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .cell:hover {
+            background: #e0e0e0;
+        }
+        .player-info {
+            margin: 10px 0;
+        }
+        .score {
+            font-weight: bold;
+        }
+        #message {
+            margin-top: 20px;
+            font-size: 24px;
+            color: #333;
+        }
+        #playerNames {
+            margin-bottom: 20px;
+        }
+        .player-input {
+            margin: 5px;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>Tic Tac Toe with a Twist</h1>
+        <div id="playerNames">
+            <input id="playerX" class="player-input" type="text" placeholder="Player X" value="Player X">
+            <input id="playerO" class="player-input" type="text" placeholder="Player O" value="Player O">
+        </div>
+        <div id="board"></div>
+        <div id="scoreBoard" class="player-info">
+            <span id="scoreX" class="score">X: 0</span> - <span id="scoreO" class="score">O: 0</span>
+        </div>
+        <div id="message"></div>
+    </div>
+    <script>
+    const board = document.getElementById('board');
+    const message = document.getElementById('message');
+    const scoreX = document.getElementById('scoreX');
+    const scoreO = document.getElementById('scoreO');
+    const playerXInput = document.getElementById('playerX');
+    const playerOInput = document.getElementById('playerO');
+
+    let currentPlayer = 'X';
+    let moves = { 'X': [], 'O': [] };
+    let scores = { 'X': 0, 'O': 0 };
+
+    // Initialize the game board
+    for(let i = 0; i < 9; i++) {
+        let cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.addEventListener('click', () => makeMove(i, cell));
+        board.appendChild(cell);
+    }
+
+    function makeMove(index, cell) {
+        if (cell.textContent !== '') return;
+
+        cell.textContent = currentPlayer;
+        cell.style.color = currentPlayer === 'X' ? 'blue' : 'red';
+        moves[currentPlayer].push(index);
+
+        if (checkWin(currentPlayer)) {
+            scores[currentPlayer]++;
+            updateScore();
+            message.textContent = `${currentPlayer} wins!`;
+            setTimeout(resetBoard, 1500);
+        } else if (isBoardFull()) {
+            message.textContent = "It's a draw!";
+            setTimeout(resetBoard, 1500);
+        } else {
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            message.textContent = `${currentPlayer === 'X' ? playerXInput.value : playerOInput.value}'s turn`;
+        }
+
+        if (moves[currentPlayer].length > 2) {
+            let oldestMove = moves[currentPlayer].shift();
+            board.children[oldestMove].textContent = '';
+            board.children[oldestMove].style.color = ''; // Reset color
+        }
+    }
+
+    function checkWin(player) {
+        return [
+            [0,1,2],[3,4,5],[6,7,8],
+            [0,3,6],[1,4,7],[2,5,8],
+            [0,4,8],[2,4,6]
+        ].some(combination => combination.every(index => moves[player].includes(index)));
+    }
+
+    function isBoardFull() {
+        return [...board.children].every(cell => cell.textContent !== '');
+    }
+
+    function resetBoard() {
+        currentPlayer = 'X';
+        moves = { 'X': [], 'O': [] };
+        board.childNodes.forEach(cell => {
+            cell.textContent = '';
+            cell.style.color = '';
+        });
+        message.textContent = `${playerXInput.value}'s turn`;
+    }
+
+    function updateScore() {
+        scoreX.textContent = `X: ${scores['X']}`;
+        scoreO.textContent = `O: ${scores['O']}`;
+    }
+
+    // Initial message
+    message.textContent = `${playerXInput.value}'s turn`;
+    </script>
+</body>
+</html>
