@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Enhanced Snake Game</title>
+    <style>
+        body {
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            color: #00FF00;
+        }
+        canvas {
+            border: 2px solid #00FF00;
+        }
+        #startScreen, #gameOver, #levelComplete {
+            position: absolute;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #00FF00;
+        }
+        #leaderboard {
+            margin-top: 20px;
+            color: #00FF00;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+<div id="startScreen">
+    <h1>Enhanced Snake Game</h1>
+    <button onclick="startGame()">Start Game</button>
+</div>
+<canvas id="gameCanvas" width="400" height="400"></canvas>
+<div id="gameOver">
+    <h2>Game Over</h2>
+    <p>Your Score: <span id="finalScore"></span></p>
+    <button onclick="restartGame()">Restart</button>
+</div>
+<div id="levelComplete">
+    <h2>Level Complete!</h2>
+    <button onclick="nextLevel()">Next Level</button>
+</div>
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const grid = 20;
+    const snakeColor = "#00FF00";
+    const foodColor = "#FF0000";
+    const obstacleColor = "#FFFFFF";
+    const powerUpColor = "#FFFF00";
+    let snake = [{x: 10, y: 10}];
+    let food = {x: 15, y: 15};
+    let obstacles = [];
+    let powerUps = [];
+    let dx = 0, dy = 0, score = 0, speed = 100, currentLevel = 1, highScore = 0;
+    let snakeTailAnimation = 0;
+
+    function startGame() {
+        document.getElementById('startScreen').style.display = 'none';
+        canvas.style.display = 'block';
+        document.addEventListener('keydown', changeDirection);
+        gameLoop();
+    }
+
+    function gameLoop() {
+        if (gameOver()) {
+            document.getElementById('gameOver').style.display = 'flex';
+            document.getElementById('finalScore').textContent = score;
+            return;
+        }
+
+        setTimeout(function onTick() {
+            clearCanvas();
+            drawObstacles();
+            drawPowerUps();
+            moveSnake();
+            drawSnake();
+            drawFood();
+            drawScore();
+
+            gameLoop();
+        }, speed);
+    }
+
+    function gameOver() {
+        if (checkCollisionWithWall() || checkCollisionWithSelf() || checkCollisionWithObstacles()) {
+            return true;
+        }
+        return false;
+    }
+
+    function moveSnake() {
+        const head = {x: snake[0].x + dx, y: snake[0].y + dy};
+        snake.unshift(head);
+        if (head.x === food.x && head.y === food.y) {
+            score++;
+            placeFood();
+            placeObstacle();
+            placePowerUp();
+        } else {
+            snake.pop();
+        }
+    }
+
+    function changeDirection(event) {
+        const LEFT_KEY = 37, RIGHT_KEY = 39, UP_KEY = 38, DOWN_KEY = 40;
+        const keyPressed = event.keyCode;
+        const goingUp = dy === -1, goingDown = dy === 1, goingRight = dx === 1, goingLeft = dx === -1;
+
+        if (keyPressed === LEFT_KEY && !goingRight) { dx = -1; dy = 0; }
+        if (keyPressed === UP_KEY && !goingDown) { dx = 0; dy = -1; }
+        if (keyPressed === RIGHT_KEY && !goingLeft) { dx = 1; dy = 0; }
+        if (keyPressed === DOWN_KEY && !goingUp) { dx = 0; dy = 1; }
+    }
+
+    function drawSnake() {
+        ctx.fillStyle = snakeColor;
+        snake.forEach((segment, index) => {
+            if (index === 0) {
+                ctx.fillRect(segment.x * grid, segment.y * grid, grid, grid);
+            } else {
+                const opacity = 0.5 + (snakeTailAnimation / 10);
+                ctx.fillStyle = `rgba(${parseInt(snakeColor.slice(1), 16)}, ${opacity})`;
+                ctx.fillRect(segment.x * grid, segment.y * grid, grid, grid);
+            }
+        });
+        snakeTailAnimation = (snakeTailAnimation + 1) % 10;
+    }
+
+    function drawFood() {
+        ctx.fillStyle = foodColor;
+        ctx.beginPath();
+        ctx.arc(food.x * grid + grid / 2, food.y * grid + grid / 2, grid / 2, 0, 2 * Math.PI);
+        ctx.fill();
+    }
+
+    function placeFood() {
+        food.x = Math.floor(Math.random() * (canvas.width / grid));
+        food.y = Math.floor(Math.random() * (canvas.height / grid));
+    }
+
+    function placeObstacle() {
+        obstacles.push({
+            x: Math.floor(Math.random() * (canvas.width / grid)),
+            y: Math.floor(Math.random() * (canvas.height / grid))
+        });
+    }
+
+    function placePowerUp() {
+        if (Math.random() < 0.5) {
+            powerUps.push({
+                x: Math.floor(Math.random() * (canvas.width / grid)),
+                y: Math.floor(Math.random() * (canvas.height / grid)),
+                type: Math.random() < 0.5 ? 'speed' : 'shield'
+            });
+        }
+    }
+
+    function drawObstacles() {
+        ctx.fillStyle = obstacleColor;
+        obstacles.forEach(obstacle => {
+            ctx.fillRect(obstacle.x * grid, obstacle.y * grid, grid, grid);
+        });
+    }
+
+    function drawPowerUps() {
+        ctx.fillStyle = powerUpColor;
+        powerUps.forEach(powerUp => {
+            ctx.beginPath();
+            ctx.arc(powerUp.x * grid + grid / 2, powerUp.y * grid + grid / 2, grid / 2, 0, 2 * Math.PI);
+            ctx.fill();
+        });
+    }
+
+    function checkCollisionWithWall() {
+        return snake[0].x < 0 || snake[0].x >= canvas.width / grid || 
+               snake[0].y < 0 || snake[0].y >= canvas.height / grid;
+    }
+
+    function checkCollisionWithSelf() {
+        for(let i = 1; i < snake.length; i++) {
+            if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) return true;
+        }
+        return false;
+    }
+
+    function checkCollisionWithObstacles() {
+        return obstacles.some(obstacle => obstacle.x === snake[0].x && obstacle.y === snake[0].y);
+    }
+
+    function clearCanvas() {
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function drawScore() {
+        ctx.fillStyle = "#FFF";
+        ctx.font = "15px 'Courier New'";
+        ctx.fillText(`Score: ${score}`, 10, 20);
+    }
+
+    function restartGame() {
+        snake = [{x: 10, y: 10}];
+        food = {x: 15, y: 15};
+        obstacles = [];
+        powerUps = [];
+        dx = 0; dy = 0; score = 0; speed = 100;
+        document.getElementById('gameOver').style.display = 'none';
+        gameLoop();
+    }
+
+    function nextLevel() {
+        currentLevel++;
+        restartGame();
+    }
+
+    // Initial setup
+    placeFood();
+    placeObstacle();
+    placePowerUp();
+    document.getElementById('startScreen').style.display = 'flex';
+</script>
+</body>
+</html>

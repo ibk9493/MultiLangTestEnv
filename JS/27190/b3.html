@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Enhanced Snake Game</title>
+    <style>
+        body {
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            color: #00FF00;
+        }
+        canvas {
+            border: 3px solid #00FF00;
+            background: #000;
+        }
+        #gameUI {
+            position: absolute;
+            text-align: center;
+            width: 400px;
+        }
+        .hidden {
+            display: none;
+        }
+        #score, #highScore, #level {
+            color: white;
+            margin: 10px 0;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+</head>
+<body>
+
+<div id="gameUI">
+    <h1>Snake Game</h1>
+    <button onclick="startGame()" id="startBtn">Start Game</button>
+    <div id="gameOver" class="hidden">
+        <h2>Game Over</h2>
+        <p>Score: <span id="finalScore"></span></p>
+        <button onclick="restartGame()">Restart</button>
+    </div>
+    <div id="score">Score: 0</div>
+    <div id="highScore">High Score: 0</div>
+    <div id="level">Level: 1</div>
+</div>
+<canvas id="gameCanvas" width="400" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scale = 20;
+    let snake = [{x: 10, y: 10}];
+    let food = {x: 0, y: 0};
+    let obstacles = [];
+    let powerUps = [];
+    let dx = 0, dy = 0, score = 0, speed = 130, level = 1, highScore = 0;
+    const powerUpTypes = ['speedBoost', 'invincibility', 'foodMagnet'];
+
+    function startGame() {
+        document.getElementById('gameUI').classList.add('hidden');
+        document.getElementById('gameOver').classList.add('hidden');
+        snake = [{x: 10, y: 10}];
+        food = placeItem(food);
+        obstacles = placeObstacles();
+        powerUps = [];
+        dx = 1; dy = 0; score = 0; level = 1;
+        gameLoop();
+    }
+
+    function gameLoop() {
+        if (update()) {
+            draw();
+            setTimeout(gameLoop, speed);
+        } else {
+            gameOver();
+        }
+    }
+
+    function update() {
+        const head = {x: snake[0].x + dx, y: snake[0].y + dy};
+        if (head.x < 0 || head.y < 0 || head.x >= canvas.width / scale || head.y >= canvas.height / scale || 
+            checkCollision(head, snake.slice(1)) || checkCollisionWithObstacles(head)) return false;
+
+        snake.unshift(head);
+        if (head.x === food.x && head.y === food.y) {
+            score += 1;
+            food = placeItem(food);
+            if (score % 5 === 0) {
+                levelUp();
+            }
+            spawnPowerUp();
+        } else {
+            snake.pop();
+        }
+
+        return true;
+    }
+
+    function draw() {
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw snake with a gradient
+        let gradient = ctx.createLinearGradient(snake[0].x*scale, snake[0].y*scale, snake[snake.length-1].x*scale, snake[snake.length-1].y*scale);
+        gradient.addColorStop(0, 'lime');
+        gradient.addColorStop(1, 'green');
+        ctx.fillStyle = gradient;
+        snake.forEach(segment => {
+            ctx.fillRect(segment.x * scale, segment.y * scale, scale - 1, scale - 1);
+            // Simple animation for snake segments
+            gsap.to(segment, {scale: 1.1, duration: 0.1, yoyo: true, repeat: 1, onComplete: () => segment.scale = 1});
+        });
+
+        // Draw food
+        ctx.fillStyle = 'red';
+        ctx.fillRect(food.x * scale, food.y * scale, scale, scale);
+
+        // Draw obstacles
+        ctx.fillStyle = 'darkgray';
+        obstacles.forEach(ob => ctx.fillRect(ob.x * scale, ob.y * scale, scale, scale));
+
+        // Draw power-ups
+        powerUps.forEach(powerUp => {
+            ctx.fillStyle = 'yellow';
+            ctx.beginPath();
+            ctx.arc((powerUp.x + 0.5) * scale, (powerUp.y + 0.5) * scale, scale/2, 0, 2 * Math.PI);
+            ctx.fill();
+        });
+
+        updateUI();
+    }
+
+    function placeItem(item) {
+        item.x = Math.floor(Math.random() * (canvas.width / scale));
+        item.y = Math.floor(Math.random() * (canvas.height / scale));
+        return item;
+    }
+
+    function placeObstacles() {
+        let obs = [];
+        for(let i = 0; i < level * 2; i++) {
+            obs.push({x: Math.floor(Math.random() * (canvas.width / scale)), y: Math.floor(Math.random() * (canvas.height / scale))});
+        }
+        return obs;
+    }
+
+    function checkCollision(head, array) {
+        return array.some(segment => segment.x === head.x && segment.y === head.y);
+    }
+
+    function checkCollisionWithObstacles(head) {
+        return obstacles.some(ob => ob.x === head.x && ob.y === head.y);
+    }
+
+    function levelUp() {
+        level++;
+        obstacles = placeObstacles(); // More obstacles with each level
+        if (speed > 50) speed -= 10; // Speed increase, but with a cap
+    }
+
+    function spawnPowerUp() {
+        if (Math.random() < 0.1) { // 10% chance to spawn a power-up
+            powerUps.push({...placeItem({}), type: powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)]});
+        }
+    }
+
+    function gameOver() {
+        if (score > highScore) highScore = score;
+        document.getElementById('finalScore').textContent = score;
+        document.getElementById('gameOver').classList.remove('hidden');
+        document.getElementById('gameUI').classList.remove('hidden');
+    }
+
+    function restartGame() {
+        startGame();
+    }
+
+    function updateUI() {
+        document.getElementById('score').textContent = `Score: ${score}`;
+        document.getElementById('highScore').textContent = `High Score: ${highScore}`;
+        document.getElementById('level').textContent = `Level: ${level}`;
+    }
+
+    document.addEventListener('keydown', ({keyCode}) => {
+        switch(keyCode) {
+            case 37: if (dx === 0) {dx = -1; dy = 0;} break; // left
+            case 38: if (dy === 0) {dx = 0; dy = -1;} break; // up
+            case 39: if (dx === 0) {dx = 1; dy = 0;} break; // right
+            case 40: if (dy === 0) {dx = 0; dy = 1;} break; // down
+        }
+    });
+
+    startGame(); // Automatically start the game or you can remove this and use the start button
+</script>
+</body>
+</html>

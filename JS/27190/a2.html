@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Retro Snake Game</title>
+    <style>
+        body {
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            color: #00FF00;
+        }
+
+        canvas {
+            border: 2px solid #00FF00;
+        }
+
+        #gameOver,
+        #startScreen {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #00FF00;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="startScreen">
+        <h1>Snake Game</h1>
+        <button onclick="startGame()">Start Game</button>
+    </div>
+    <canvas id="gameCanvas" width="400" height="400" style="display: none;"></canvas>
+    <div id="gameOver" style="display: none;">
+        <h2>Game Over</h2>
+        <p>Your Score: <span id="finalScore"></span></p>
+        <button onclick="restartGame()">Play Again</button>
+    </div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const grid = 20;
+        let levels = [
+            { winScore: 2, speed: 100 },
+            { winScore: 20, speed: 90 },
+            { winScore: 30, speed: 80 },
+            // Add more levels as needed
+        ];
+        let currentLevel = 0;
+        let unlockedLevels = JSON.parse(localStorage.getItem('unlockedLevels')) || [true]; // First level is unlocked by default
+
+        let snake = [{ x: 10, y: 10 }],
+            food = { x: 15, y: 15 },
+            dx = 0,
+            dy = 0,
+            score = 0,
+            speed = 100,
+            difficulty = 'medium',
+            highScore = localStorage.getItem('snakeHighScore') || 0;
+
+        function startGame(level = 0) {
+            currentLevel = level;
+            speed = levels[currentLevel].speed;
+            document.getElementById('startScreen').style.display = 'none';
+            canvas.style.display = 'block';
+            document.addEventListener('keydown', changeDirection);
+            gameLoop();
+        }
+        function celebrateLevelUp() {
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }
+        function checkLevelCompletion() {
+            if (score >= levels[currentLevel].winScore) {
+                if (currentLevel < levels.length - 1) {
+                    unlockedLevels[currentLevel + 1] = true;
+                    localStorage.setItem('unlockedLevels', JSON.stringify(unlockedLevels));
+                    celebrateLevelUp();
+                }
+            }
+        }
+        let highScores = JSON.parse(localStorage.getItem('highScores')) || {};
+
+        function updateLeaderboard(score, level) {
+            if (!highScores[level] || highScores[level] < score) {
+                highScores[level] = score;
+                localStorage.setItem('highScores', JSON.stringify(highScores));
+            }
+        }
+
+        function displayLeaderboard() {
+            // This could be displayed in a div or another canvas
+            let leaderboardHTML = "<h2>Leaderboard</h2>";
+            Object.keys(highScores).forEach((level, index) => {
+                leaderboardHTML += `<p>Level ${parseInt(level) + 1}: ${highScores[level]}</p>`;
+            });
+            document.getElementById('leaderboard').innerHTML = leaderboardHTML;
+        }
+        function gameLoop() {
+            if (gameOver()) {
+                document.getElementById('gameOver').style.display = 'flex';
+                document.getElementById('finalScore').textContent = score;
+                if (score > highScore) {
+                    highScore = score;
+                    localStorage.setItem('snakeHighScore', highScore);
+                }
+                checkLevelCompletion()
+               
+                                return;
+            }
+
+            setTimeout(function onTick() {
+                clearCanvas();
+                moveSnake();
+                drawSnake();
+                drawFood();
+                drawScore();
+
+                // Speed increase with score
+                if (score % 5 === 0 && speed > 50) speed -= 5;
+
+                gameLoop();
+            }, speed);
+        }
+
+        function gameOver() {
+            // Check wall collision
+            if (snake[0].x < 0 || snake[0].x >= canvas.width / grid ||
+                snake[0].y < 0 || snake[0].y >= canvas.height / grid) return true;
+
+            // Check self collision
+            for (let i = 1; i < snake.length; i++) {
+                if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) return true;
+            }
+            return false;
+        }
+
+        function moveSnake() {
+            const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+            snake.unshift(head);
+            if (head.x === food.x && head.y === food.y) {
+                score++;
+                placeFood();
+            } else {
+                snake.pop();
+            }
+        }
+
+        function changeDirection(event) {
+            const LEFT_KEY = 37, RIGHT_KEY = 39, UP_KEY = 38, DOWN_KEY = 40;
+            const keyPressed = event.keyCode;
+            const goingUp = dy === -1, goingDown = dy === 1, goingRight = dx === 1, goingLeft = dx === -1;
+
+            if (keyPressed === LEFT_KEY && !goingRight) { dx = -1; dy = 0; }
+            if (keyPressed === UP_KEY && !goingDown) { dx = 0; dy = -1; }
+            if (keyPressed === RIGHT_KEY && !goingLeft) { dx = 1; dy = 0; }
+            if (keyPressed === DOWN_KEY && !goingUp) { dx = 0; dy = 1; }
+        }
+
+        function drawSnake() {
+            ctx.fillStyle = "#00FF00";
+            snake.forEach(segment => {
+                ctx.fillRect(segment.x * grid, segment.y * grid, grid - 1, grid - 1);
+            });
+        }
+
+        function drawFood() {
+            ctx.fillStyle = "#FF0000";
+            ctx.fillRect(food.x * grid, food.y * grid, grid - 1, grid - 1);
+        }
+
+        function placeFood() {
+            food.x = Math.floor(Math.random() * (canvas.width / grid));
+            food.y = Math.floor(Math.random() * (canvas.height / grid));
+        }
+
+        function clearCanvas() {
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function drawScore() {
+            ctx.fillStyle = "#FFF";
+            ctx.font = "15px 'Courier New'";
+            ctx.fillText(`Score: ${score} High Score: ${highScore}`, 10, 20);
+        }
+
+        function restartGame() {
+            snake = [{ x: 10, y: 10 }];
+            food = { x: 15, y: 15 };
+            dx = 0; dy = 0; score = 0; speed = 100;
+            document.getElementById('gameOver').style.display = 'none';
+            gameLoop();
+        }
+
+        // Initial food placement
+        placeFood();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
+</body>
+
+</html>
