@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Enhanced Snake Game</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { 
             background: #000; 
@@ -32,37 +33,39 @@
     </style>
 </head>
 <body>
-<div id="startScreen">
-    <h1>Snake Game</h1>
+<div id="startScreen" class="text-center text-light">
+    <h1 class="mb-4">Snake Game</h1>
     <label for="levelSelect">Select Level:</label>
-    <select id="levelSelect" onchange="selectLevel()">
+    <select id="levelSelect" class="form-select w-50 mx-auto mb-3" onchange="selectLevel()">
         <option value="1">Level 1</option>
+        <option value="2">Level 2</option>
+        <option value="3">Level 3</option>
     </select>
-    <button onclick="startGame()">Start Game</button>
-    <select id="difficulty" onchange="setDifficulty()">
+    <button class="btn btn-success mb-3" onclick="startGame()">Start Game</button>
+    <select id="difficulty" class="form-select w-50 mx-auto mb-3" onchange="setDifficulty()">
         <option value="easy">Easy</option>
         <option value="medium" selected>Medium</option>
         <option value="hard">Hard</option>
     </select>
 </div>
 <canvas id="gameCanvas" width="400" height="400" style="display: none;"></canvas>
-<div id="gameOver" style="display: none;">
+<div id="gameOver" class="text-center" style="display: none;">
     <h2>Game Over</h2>
     <p>Your Score: <span id="finalScore"></span></p>
     <p>High Score: <span id="highScoreDisplay"></span></p>
-    <button onclick="restartGame()">Play Again</button>
-    <button onclick="resetHighScore()">Reset High Score</button>
+    <button class="btn btn-success" onclick="resetGame()">Play Again</button>
+    <button class="btn btn-danger" onclick="resetHighScore()">Reset High Score</button>
     <div id="leaderboard">
         <h3>Leaderboard</h3>
-        <ul id="leaderboardList"></ul>
+        <ul id="leaderboardList" class="list-group"></ul>
     </div>
 </div>
-<div id="levelComplete" style="display: none;">
+<div id="levelComplete" class="text-center" style="display: none;">
     <h2>Level Complete!</h2>
-    <button onclick="nextLevel()">Next Level</button>
-    <button onclick="restartGame()">Restart Game</button>
+    <button class="btn btn-primary" onclick="nextLevel()">Next Level</button>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
@@ -73,9 +76,8 @@
         { level: 3, scoreToWin: 30, obstacleCount: 6 }
     ];
     let currentLevel = 1;
-    let unlockedLevels = JSON.parse(localStorage.getItem('unlockedLevels')) || [1];
     let snake = [{x: 10, y: 10}], 
-        food = {x: 15, y: 15}, 
+        food = {}, 
         obstacles = [],
         powerUps = [],
         dx = 0, 
@@ -84,12 +86,15 @@
         speed = 100,
         difficulty = 'medium',
         highScore = localStorage.getItem('snakeHighScore') || 0,
-        leaderboard = JSON.parse(localStorage.getItem('snakeLeaderboard')) || [],
         paused = false,
+        levelCompleted = false,
         powerUpActive = false,
         powerUpTimer = null;
 
     document.addEventListener('DOMContentLoaded', function() {
+        placeFood();
+        placeObstacles();
+        placePowerUps();
         updateLevelSelect();
     });
 
@@ -97,9 +102,6 @@
         document.getElementById('startScreen').style.display = 'none';
         canvas.style.display = 'block';
         document.addEventListener('keydown', changeDirection);
-        document.addEventListener('keydown', function(event) {
-            if (event.keyCode === 80) togglePause(); // 'P' key to pause/resume
-        });
         gameLoop();
     }
 
@@ -126,15 +128,11 @@
     function gameLoop() {
         if (paused) return;
         
-        if (gameOver()) {
+        if (isGameOver()) {
             document.getElementById('gameOver').style.display = 'flex';
             document.getElementById('finalScore').textContent = score;
             document.getElementById('highScoreDisplay').textContent = highScore;
-            updateLeaderboard(score);
-            if (score > highScore) {
-                highScore = score;
-                localStorage.setItem('snakeHighScore', highScore);
-            }
+            updateHighScore();
             return;
         }
 
@@ -146,20 +144,24 @@
         setTimeout(function onTick() {
             clearCanvas();
             moveSnake();
+            if (snake[0].x === food.x && snake[0].y === food.y) {
+                score++;
+                snake.push({});
+                placeFood();
+            }
+
+            checkPowerUpCollision();
+
             drawSnake();
             drawFood();
             drawObstacles();
             drawPowerUps();
             drawScore();
-
-            // Speed increase with score
-            if (score % 5 === 0 && speed > 50) speed -= 5;
-
             gameLoop();
         }, speed);
     }
 
-    function gameOver() {
+    function isGameOver() {
         // Check wall collision
         if (snake[0].x < 0 || snake[0].x >= canvas.width / grid || 
             snake[0].y < 0 || snake[0].y >= canvas.height / grid) return true;
@@ -180,20 +182,7 @@
     function moveSnake() {
         const head = {x: snake[0].x + dx, y: snake[0].y + dy};
         snake.unshift(head);
-        if (head.x === food.x && head.y === food.y) {
-            score++;
-            placeFood();
-        } else {
-            snake.pop();
-        }
-
-        // Check power-up collision
-        for (let i = 0; i < powerUps.length; i++) {
-            if (powerUps[i].x === head.x && powerUps[i].y === head.y) {
-                activatePowerUp(powerUps[i].type);
-                powerUps.splice(i, 1); // Remove power-up after collection
-            }
-        }
+        snake.pop();
     }
 
     function changeDirection(event) {
@@ -208,28 +197,21 @@
     }
 
     function drawSnake() {
-        ctx.fillStyle = ctx.createLinearGradient(0, 0, grid, grid);
-        ctx.fillStyle.addColorStop(0, '#00FF00');
-        ctx.fillStyle.addColorStop(1, '#006600');
-        snake.forEach((segment, index) => {
+        ctx.fillStyle = powerUpActive ? '#FFD700' : '#00FF00'; // Gold color when power-up active
+        snake.forEach((segment) => {
             ctx.fillRect(segment.x * grid, segment.y * grid, grid - 2, grid - 2);
-            ctx.strokeStyle = '#003300';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(segment.x * grid, segment.y * grid, grid - 2, grid - 2);
         });
     }
 
     function drawFood() {
         ctx.fillStyle = "#FF0000";
-        ctx.beginPath();
-        ctx.arc(food.x * grid + grid / 2, food.y * grid + grid / 2, grid / 2 - 1, 0, 2 * Math.PI);
-        ctx.fill();
+        ctx.fillRect(food.x * grid, food.y * grid, grid - 2, grid - 2);
     }
 
     function drawObstacles() {
         ctx.fillStyle = "#888888";
         obstacles.forEach(obstacle => {
-            ctx.fillRect(obstacle.x * grid, obstacle.y * grid, grid, grid);
+            ctx.fillRect(obstacle.x * grid, obstacle.y * grid, grid - 2, grid - 2);
         });
     }
 
@@ -241,8 +223,10 @@
     }
 
     function placeFood() {
-        food.x = Math.floor(Math.random() * (canvas.width / grid));
-        food.y = Math.floor(Math.random() * (canvas.height / grid));
+        food = {
+            x: Math.floor(Math.random() * (canvas.width / grid)),
+            y: Math.floor(Math.random() * (canvas.height / grid))
+        };
     }
 
     function placeObstacles() {
@@ -258,14 +242,53 @@
     }
 
     function placePowerUps() {
-        if (Math.random() < 0.1) { // 10% chance to spawn a power-up each tick
+        powerUps = [];
+        if (Math.random() < 0.3) { // 30% chance to spawn a power-up
             let powerUp = {
                 x: Math.floor(Math.random() * (canvas.width / grid)),
                 y: Math.floor(Math.random() * (canvas.height / grid)),
-                type: "speedBoost" // Example power-up type
+                type: "slowDown" // Slow down power-up
             };
             powerUps.push(powerUp);
         }
+    }
+
+    function checkPowerUpCollision() {
+        for (let i = 0; i < powerUps.length; i++) {
+            if (powerUps[i].x === snake[0].x && powerUps[i].y === snake[0].y) {
+                activatePowerUp(powerUps[i].type);
+                powerUps.splice(i, 1); // Remove power-up after collection
+            }
+        }
+    }
+
+    function activatePowerUp(type) {
+        powerUpActive = true;
+        switch (type) {
+            case "slowDown":
+                speed += 50; // Slow down snake
+                removeHalfObstacles(); // Remove half of the obstacles
+                break;
+        }
+
+        if (powerUpTimer) clearTimeout(powerUpTimer); // Reset any existing timer
+        powerUpTimer = setTimeout(() => {
+            deactivatePowerUp(type);
+        }, 5000); // Power-up lasts for 5 seconds
+    }
+
+    function deactivatePowerUp(type) {
+        powerUpActive = false;
+        switch (type) {
+            case "slowDown":
+                setDifficulty(); // Revert to original speed
+                break;
+        }
+    }
+
+    function removeHalfObstacles() {
+        const half = Math.floor(obstacles.length / 2);
+        obstacles = obstacles.slice(half); // Remove the first half of the obstacles
     }
 
     function clearCanvas() {
@@ -281,24 +304,23 @@
 
     function resetGame() {
         snake = [{x: 10, y: 10}];
-        food = {x: 15, y: 15};
         dx = 0; 
         dy = 0; 
         score = 0; 
-        setDifficulty(); // Reset speed based on difficulty
-        currentLevel = parseInt(document.getElementById('levelSelect').value); // Reset to selected level
+        levelCompleted = false;
+        powerUpActive = false;
+        clearTimeout(powerUpTimer);
         document.getElementById('gameOver').style.display = 'none';
         document.getElementById('levelComplete').style.display = 'none';
+        placeFood();
         placeObstacles();
         placePowerUps();
+        setDifficulty();
         gameLoop();
     }
 
     function levelComplete() {
         document.getElementById('levelComplete').style.display = 'flex';
-        unlockedLevels = [...new Set([...unlockedLevels, currentLevel + 1])];
-        localStorage.setItem('unlockedLevels', JSON.stringify(unlockedLevels));
-        updateLevelSelect();  // Update the level dropdown to reflect new unlocked level
         confettiEffect();
     }
 
@@ -319,30 +341,19 @@
     function updateLevelSelect() {
         const levelSelect = document.getElementById('levelSelect');
         levelSelect.innerHTML = '';
-        unlockedLevels.forEach(level => {
+        for (let i = 1; i <= levels.length; i++) {
             let option = document.createElement('option');
-            option.value = level;
-            option.textContent = `Level ${level}`;
+            option.value = i;
+            option.textContent = `Level ${i}`;
             levelSelect.appendChild(option);
-        });
+        }
     }
 
-    function updateLeaderboard(score) {
-        leaderboard.push({ score: score, level: currentLevel });
-        leaderboard.sort((a, b) => b.score - a.score);
-        leaderboard = leaderboard.slice(0, 5); // Top 5 scores
-        localStorage.setItem('snakeLeaderboard', JSON.stringify(leaderboard));
-        renderLeaderboard();
-    }
-
-    function renderLeaderboard() {
-        const leaderboardList = document.getElementById('leaderboardList');
-        leaderboardList.innerHTML = '';
-        leaderboard.forEach((entry, index) => {
-            let li = document.createElement('li');
-            li.textContent = `${index + 1}. Level ${entry.level} - Score: ${entry.score}`;
-            leaderboardList.appendChild(li);
-        });
+    function updateHighScore() {
+        if (score > highScore) {
+            highScore = score;
+            localStorage.setItem('snakeHighScore', highScore);
+        }
     }
 
     function resetHighScore() {
@@ -350,35 +361,6 @@
         localStorage.setItem('snakeHighScore', highScore);
         document.getElementById('highScoreDisplay').textContent = highScore;
     }
-
-    function activatePowerUp(type) {
-        powerUpActive = true;
-        switch (type) {
-            case "speedBoost":
-                speed = Math.max(speed - 30, 30); // Increase speed temporarily
-                break;
-            // Additional power-ups can be added here
-        }
-
-        if (powerUpTimer) clearTimeout(powerUpTimer); // Reset any existing timer
-        powerUpTimer = setTimeout(() => {
-            deactivatePowerUp(type);
-        }, 5000); // Power-up lasts for 5 seconds
-    }
-
-    function deactivatePowerUp(type) {
-        powerUpActive = false;
-        switch (type) {
-            case "speedBoost":
-                setDifficulty(); // Revert to original speed
-                break;
-            // Revert additional power-up effects here
-        }
-    }
-
-    // Initial setup
-    renderLeaderboard();
-    placeFood();
 </script>
 </body>
 </html>
