@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Activity Generator</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f9;
+        }
+        .widget {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        select, button {
+            margin: 10px 0;
+            padding: 10px;
+            font-size: 16px;
+        }
+        #activityDisplay {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+<div class="widget">
+    <h2>Activity Generator</h2>
+    <select id="categorySelect">
+        <option value="relaxation">Relaxation</option>
+        <option value="physical">Physical</option>
+        <option value="creative">Creative</option>
+        <option value="social">Social</option>
+    </select>
+    <button onclick="generateActivity()">Generate Activity</button>
+    <div id="activityDisplay"></div>
+</div>
+
+<script>
+    // Arrays of activities by category
+    const activities = {
+        relaxation: ["Meditate for 10 minutes", "Read a book", "Take a warm bath", "Listen to soothing music"],
+        physical: ["Go for a walk", "Do a quick home workout", "Try some yoga", "Dance to your favorite song"],
+        creative: ["Draw or sketch something", "Write a short story", "Try a new recipe", "Play a musical instrument"],
+        social: ["Call a friend", "Plan a game night", "Write a letter to someone", "Join an online community event"]
+    };
+
+    function generateActivity() {
+        const category = document.getElementById('categorySelect').value;
+        const activityList = activities[category];
+        const randomActivity = activityList[Math.floor(Math.random() * activityList.length)];
+        document.getElementById('activityDisplay').textContent = randomActivity;
+    }
+</script>
+
+</body>
+</html>
