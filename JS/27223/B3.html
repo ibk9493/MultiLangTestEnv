@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Tracker with Wheel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: start;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            text-align: center;
+            margin: 20px;
+        }
+
+        #activity-history {
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        #activity-history li {
+            margin-bottom: 10px;
+            list-style: none;
+            padding: 5px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        #total-time {
+            font-weight: bold;
+            color: #333;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Activity Time!</h1>
+
+        <select id="category"></select>
+        <select id="time-limit"></select>
+
+        <button id="spin-btn">Spin the Wheel!</button>
+
+        <div class="wheel-container">
+            <canvas id="wheel" width="300" height="300"></canvas>
+        </div>
+
+        <div id="result"></div>
+        
+        <h2>Activity History:</h2>
+        <ul id="activity-history">
+            <!-- Activity history will be displayed here -->
+        </ul>
+        <div id="total-time"></div>
+    </div>
+    
+</head>
+    <script>
+    
+        document.addEventListener('DOMContentLoaded', function () {
+            const categories = {
+                outdoor: { short: 15, medium: 30, long: 60 },
+                indoor: { short: 15, medium: 30, long: 60 },
+                creative: { short: 15, medium: 30, long: 60 }
+            };
+
+            const activityList = {
+                outdoor: {
+                    short: ['Take a brisk walk'],
+                    medium: ['Go for a run'],
+                    long: ['Visit a nearby park for a nature walk']
+                },
+                indoor: {
+                    short: ['Read a chapter of a book'],
+                    medium: ['Watch a documentary'],
+                    long: ['Organize your closet']
+                },
+                creative: {
+                    short: ['Sketch something'],
+                    medium: ['Write a short poem'],
+                    long: ['Start a DIY project']
+                }
+            };
+
+            const historyList = document.getElementById('activity-history');
+            const totalTimeDiv = document.getElementById('total-time');
+            const resultDiv = document.getElementById('result');
+            const spinBtn = document.getElementById('spin-btn');
+            const categorySelect = document.getElementById('category');
+            const timeLimitSelect = document.getElementById('time-limit');
+            const wheelCanvas = document.getElementById('wheel');
+            const ctx = wheelCanvas.getContext('2d');
+
+            let activityHistory = JSON.parse(localStorage.getItem('activityHistory')) || [];
+            let totalTimeSpent = parseInt(localStorage.getItem('totalTimeSpent')) || 0;
+
+            function init() {
+                for (let category in activityList) {
+                    categorySelect.innerHTML += `<option value="${category}">${category.charAt(0).toUpperCase() + category.slice(1)}</option>`;
+                }
+                ['short', 'medium', 'long'].forEach(time => timeLimitSelect.innerHTML += `<option value="${time}">${time === 'short' ? '15 mins' : time === 'medium' ? '30 mins' : '1 hour'}</option>`);
+
+                updateHistoryDisplay();
+                spinBtn.addEventListener('click', spinAndTrack);
+                categorySelect.addEventListener('change', drawWheel);
+                timeLimitSelect.addEventListener('change', drawWheel);
+            }
+
+            function drawWheel() {
+                const selectedCategory = categorySelect.value;
+                const selectedTimeLimit = timeLimitSelect.value;
+                const activities = activityList[selectedCategory][selectedTimeLimit];
+                const timeValue = categories[selectedCategory][selectedTimeLimit];
+                const slices = activities.map((activity, index) => ({ activity, time: timeValue, color: index % 2 === 0 ? '#FFDD57' : '#FFA500' }));
+                const anglePerSlice = 360 / slices.length;
+
+                ctx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);
+                slices.forEach((slice, index) => {
+                    const startAngle = index * anglePerSlice * Math.PI / 180;
+                    const endAngle = startAngle + anglePerSlice * Math.PI / 180;
+
+                    ctx.beginPath();
+                    ctx.moveTo(wheelCanvas.width / 2, wheelCanvas.height / 2);
+                    ctx.arc(wheelCanvas.width / 2, wheelCanvas.height / 2, wheelCanvas.width / 2, startAngle, endAngle);
+                    ctx.fillStyle = slice.color;
+                    ctx.fill();
+
+                    ctx.save();
+                    ctx.translate(wheelCanvas.width / 2, wheelCanvas.height / 2);
+                    ctx.rotate(startAngle + anglePerSlice * Math.PI / 360);
+                    ctx.textAlign = "right";
+                    ctx.fillStyle = '#333';
+                    ctx.font = '12px Arial';
+                    ctx.fillText(slice.activity, wheelCanvas.width / 2 - 10, 10);
+                    ctx.restore();
+                });
+            }
+
+            function spinAndTrack() {
+                const selectedCategory = categorySelect.value;
+                const selectedTimeLimit = timeLimitSelect.value;
+                const activities = activityList[selectedCategory][selectedTimeLimit];
+                const randomIndex = Math.floor(Math.random() * activities.length);
+                const selectedActivity = activities[randomIndex];
+                const timeValue = categories[selectedCategory][selectedTimeLimit];
+
+                activityHistory.push({ activity: selectedActivity, time: timeValue });
+                totalTimeSpent += timeValue;
+                localStorage.setItem('activityHistory', JSON.stringify(activityHistory));
+                localStorage.setItem('totalTimeSpent', totalTimeSpent);
+
+                updateHistoryDisplay();
+                resultDiv.textContent = `You should: ${selectedActivity}`;
+                gsap.to(wheelCanvas, {
+                    rotation: '+=3600',
+                    duration: 3,
+                    ease: "power4.out"
+                });
+            }
+
+            function updateHistoryDisplay() {
+                historyList.innerHTML = '';
+                activityHistory.forEach(item => {
+                    historyList.innerHTML += `<li>${item.activity} - ${item.time} minutes</li>`;
+                });
+                totalTimeDiv.textContent = `Total time spent: ${totalTimeSpent} minutes`;
+            }
+
+            init();
+            drawWheel();
+        });
+    </script>
+</body>
+</html>

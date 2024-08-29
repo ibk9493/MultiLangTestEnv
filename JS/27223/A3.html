@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Tracker & Spinner</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: start;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            text-align: center;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin: 20px;
+        }
+        .wheel-container, .history-container {
+            margin-top: 20px;
+        }
+        #wheel {
+            border: 5px solid #333;
+            border-radius: 50%;
+        }
+        #activityHistory {
+            text-align: left;
+            width: 300px;
+            height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        #totalTime {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Activity Spinner & Tracker</h1>
+    
+    <select id="category">
+        <option value="physical">Physical</option>
+        <option value="mental">Mental</option>
+        <option value="creative">Creative</option>
+    </select>
+    
+    <select id="timeSelect">
+        <option value="15">15 minutes</option>
+        <option value="30">30 minutes</option>
+        <option value="60">60 minutes</option>
+    </select>
+    
+    <button onclick="spinWheel()">Spin for Activity</button>
+    
+    <div class="wheel-container">
+        <canvas id="wheel" width="400" height="400"></canvas>
+    </div>
+    
+    <div id="result"></div>
+    
+    <div class="history-container">
+        <h2>Activity History</h2>
+        <div id="activityHistory"></div>
+        <div id="totalTime">Total Time: 0 minutes</div>
+    </div>
+</div>
+
+<script>
+    const activities = {
+        physical: {15: ['Quick jog', 'Push-ups'], 30: ['Yoga session'], 60: ['Full workout']},
+        mental: {15: ['Meditation', 'Read'], 30: ['Puzzle time'], 60: ['Documentary']},
+        creative: {15: ['Sketch', 'Write'], 30: ['Craft'], 60: ['Paint']}
+    };
+
+    let totalTimeSpent = 0;
+    const history = [];
+    const ctx = document.getElementById('wheel').getContext('2d');
+
+    function drawWheel(activities) {
+        ctx.clearRect(0, 0, 400, 400);
+        let angle = 0;
+        const sliceDegree = 360 / activities.length;
+        activities.forEach((activity, i) => {
+            ctx.beginPath();
+            ctx.moveTo(200, 200);
+            ctx.arc(200, 200, 200, angle * Math.PI / 180, (angle + sliceDegree) * Math.PI / 180);
+            ctx.lineTo(200, 200);
+            ctx.fillStyle = `hsl(${i * 360 / activities.length}, 70%, 50%)`;
+            ctx.fill();
+            ctx.save();
+            ctx.translate(200, 200);
+            ctx.rotate((angle + sliceDegree / 2) * Math.PI / 180);
+            ctx.textAlign = "right";
+            ctx.fillStyle = "white";
+            ctx.font = "16px Arial";
+            ctx.fillText(activity, 190, 0);
+            ctx.restore();
+            angle += sliceDegree;
+        });
+    }
+
+    function spinWheel() {
+        const category = document.getElementById('category').value;
+        const time = parseInt(document.getElementById('timeSelect').value);
+        const selectedActivities = activities[category][time];
+        
+        drawWheel(selectedActivities);
+        
+        const result = Math.floor(Math.random() * selectedActivities.length);
+        const activity = selectedActivities[result];
+        
+        document.getElementById('result').textContent = `Your activity: ${activity}`;
+        
+        // Update history and time
+        history.push({activity, time});
+        updateHistory();
+        totalTimeSpent += time;
+        document.getElementById('totalTime').textContent = `Total Time: ${totalTimeSpent} minutes`;
+    }
+
+    function updateHistory() {
+        const historyDiv = document.getElementById('activityHistory');
+        historyDiv.innerHTML = history.map((entry, index) => `${index + 1}. ${entry.activity} (${entry.time} min)`).join('<br>');
+    }
+</script>
+
+</body>
+</html>
