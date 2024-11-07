@@ -1,8 +1,15 @@
-modules = ["nodejs-20"]
-run = "build = \"tsc app.ts\""
+entrypoint = "main.py"
+modules = ["python-3.10"]
 
 [nix]
-channel = "stable-24_05"
+channel = "stable-23_05"
+
+[unitTest]
+language = "python3"
+
+[gitHubImport]
+requiredFiles = [".replit", "replit.nix"]
 
 [deployment]
-run = ["sh", "-c", "build = \"tsc app.ts\""]
+run = ["python3", "main.py"]
+deploymentTarget = "cloudrun"
